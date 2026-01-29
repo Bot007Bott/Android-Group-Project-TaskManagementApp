@@ -5,6 +5,7 @@ import androidx.appcompat.app.AppCompatActivity;
 import androidx.fragment.app.Fragment;
 import com.google.android.material.bottomnavigation.BottomNavigationView;
 import com.midtermproject.mytaskmanagementApp.R;
+import com.midtermproject.mytaskmanagementApp.ui.view.fragments.CategoryListFragment;
 import com.midtermproject.mytaskmanagementApp.ui.view.fragments.TaskListFragment;
 import com.midtermproject.mytaskmanagementApp.ui.view.fragments.CompletedTasksFragment;
 
@@ -31,6 +32,8 @@ public class MainActivity extends AppCompatActivity {
 
             if (item.getItemId() == R.id.nav_home) {
                 selectedFragment = new TaskListFragment();
+            } else if (item.getItemId() == R.id.nav_categories) {
+                selectedFragment = new CategoryListFragment();
             } else if (item.getItemId() == R.id.nav_completed) {
                 selectedFragment = new CompletedTasksFragment();
             }

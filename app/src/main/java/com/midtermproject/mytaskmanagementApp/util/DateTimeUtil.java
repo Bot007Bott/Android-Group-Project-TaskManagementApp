@@ -246,4 +246,28 @@ public class DateTimeUtil {
             return "In " + days + " day" + (days != 1 ? "s" : "");
         }
     }
+
+    /**
+     * Check if date is within the next 7 days (this week)
+     * @param dateString Date to check in "yyyy-MM-dd" format
+     * @return true if date is within the next 7 days (including today)
+     */
+    public static boolean isWithinNextWeek(String dateString) {
+        try {
+            Date taskDate = DB_DATE_FORMAT.parse(dateString);
+            Date today = DB_DATE_FORMAT.parse(getCurrentDate());
+
+            // Add 7 days to today
+            Calendar calendar = Calendar.getInstance();
+            calendar.setTime(today);
+            calendar.add(Calendar.DAY_OF_YEAR, 7);
+            Date weekLater = calendar.getTime();
+
+            // Task is within next week if: today <= taskDate <= weekLater
+            return (taskDate.equals(today) || taskDate.after(today)) &&
+                    (taskDate.before(weekLater) || taskDate.equals(weekLater));
+        } catch (ParseException e) {
+            return false;
+        }
+    }
 }

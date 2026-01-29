@@ -10,7 +10,6 @@ import android.widget.ArrayAdapter;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.Spinner;
-import android.widget.TextView;
 import android.widget.Toast;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
@@ -58,6 +57,9 @@ public class AddTaskFragment extends Fragment {
         setupCategorySpinner();
         setupClickListeners();
         setupPriorityButtons();
+
+        // Set initial due date button text
+        btnDueDate.setText("Select Due Date");
     }
 
     private void initViews(View view) {
@@ -84,8 +86,9 @@ public class AddTaskFragment extends Fragment {
         categoryViewModel.getAllCategories().observe(getViewLifecycleOwner(), categories -> {
             if (categories != null) {
                 categoryList = categories;
-
                 List<String> categoryNames = new ArrayList<>();
+
+                // Always add these two first
                 categoryNames.add("Select Category");
                 categoryNames.add("+ Add New Category");
 
@@ -93,7 +96,6 @@ public class AddTaskFragment extends Fragment {
                     categoryNames.add(category.getCategoryName());
                 }
 
-                // SIMPLE ADAPTER - NO DESCRIPTION
                 ArrayAdapter<String> adapter = new ArrayAdapter<>(
                         requireContext(),
                         android.R.layout.simple_spinner_item,
@@ -102,18 +104,21 @@ public class AddTaskFragment extends Fragment {
                 adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
                 spinnerCategory.setAdapter(adapter);
 
-                // Handle spinner selection
+                // ADD THIS CRITICAL PART: Set up spinner selection listener
                 spinnerCategory.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
                     @Override
                     public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
                         if (position == 1) { // "+ Add New Category" selected
                             openAddCategoryFragment();
-                            spinnerCategory.setSelection(0); // Reset to "Select Category"
+                            // Reset spinner to "Select Category" after opening fragment
+                            spinnerCategory.setSelection(0);
                         }
                     }
 
                     @Override
-                    public void onNothingSelected(AdapterView<?> parent) {}
+                    public void onNothingSelected(AdapterView<?> parent) {
+                        // Do nothing
+                    }
                 });
             }
         });
@@ -190,7 +195,9 @@ public class AddTaskFragment extends Fragment {
                 year, month, day
         );
 
+        // IMPORTANT: This line prevents selecting past dates
         datePicker.getDatePicker().setMinDate(System.currentTimeMillis());
+
         datePicker.show();
     }
 
@@ -198,9 +205,11 @@ public class AddTaskFragment extends Fragment {
         String taskName = etTaskName.getText().toString().trim();
         String description = etTaskDescription.getText().toString().trim();
 
-        // Validate
-        if (taskName.isEmpty()) {
-            etTaskName.setError("Task name is required");
+        // Validate using your ValidationUtil
+        String taskNameError = com.midtermproject.mytaskmanagementApp.util.ValidationUtil.validateTaskName(taskName);
+        if (taskNameError != null) {
+            etTaskName.setError(taskNameError);
+            etTaskName.requestFocus();
             return;
         }
 

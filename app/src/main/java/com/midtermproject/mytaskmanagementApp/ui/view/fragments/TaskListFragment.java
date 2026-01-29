@@ -21,10 +21,9 @@ import com.midtermproject.mytaskmanagementApp.R;
 import com.midtermproject.mytaskmanagementApp.ui.adapter.TaskAdapter;
 import com.midtermproject.mytaskmanagementApp.ui.viewmodel.TaskViewModel;
 import com.midtermproject.mytaskmanagementApp.util.Constants;
+import com.midtermproject.mytaskmanagementApp.util.DateTimeUtil;
 import java.util.ArrayList;
 import java.util.List;
-import android.text.Editable;
-import android.text.TextWatcher;
 
 public class TaskListFragment extends Fragment {
 
@@ -33,7 +32,7 @@ public class TaskListFragment extends Fragment {
     private TextView tvTotalTasks, tvDoneTasks, tvTodayTasks;
     private RecyclerView recyclerView;
     private TextView tvEmptyState;
-    private Button btnAll, btnToday, btnWeek, btnMore;
+    private Button btnAll, btnToday, btnWeek, btnOverdue;
     private FloatingActionButton fabAddTask;
     private EditText etSearch;
     private Button btnClearSearch;
@@ -53,16 +52,9 @@ public class TaskListFragment extends Fragment {
     public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
         super.onViewCreated(view, savedInstanceState);
 
-        // Initialize UI
         initViews(view);
-
-        // Setup RecyclerView
         setupRecyclerView();
-
-        // Get ViewModel
         taskViewModel = new ViewModelProvider(this).get(TaskViewModel.class);
-
-        // Observe tasks from database
         observeTasks();
     }
 
@@ -74,17 +66,15 @@ public class TaskListFragment extends Fragment {
         btnAll = view.findViewById(R.id.btn_filter_all);
         btnToday = view.findViewById(R.id.btn_filter_today);
         btnWeek = view.findViewById(R.id.btn_filter_week);
-        btnMore = view.findViewById(R.id.btn_filter_more);
+        btnOverdue = view.findViewById(R.id.btn_filter_more);
 
         recyclerView = view.findViewById(R.id.recycler_view_tasks);
         tvEmptyState = view.findViewById(R.id.tv_empty_state);
         fabAddTask = view.findViewById(R.id.fab_add_task);
 
-        // Search views
         etSearch = view.findViewById(R.id.et_search);
         btnClearSearch = view.findViewById(R.id.btn_clear_search);
 
-        // Setup button clicks
         setupButtonListeners();
     }
 
@@ -93,7 +83,6 @@ public class TaskListFragment extends Fragment {
         recyclerView.setLayoutManager(new LinearLayoutManager(getContext()));
         recyclerView.setAdapter(taskAdapter);
 
-        // Set click listener for task items
         taskAdapter.setOnItemClickListener(task -> {
             Bundle args = new Bundle();
             args.putInt(Constants.EXTRA_TASK_ID, task.getTaskId());
@@ -107,7 +96,6 @@ public class TaskListFragment extends Fragment {
                     .commit();
         });
 
-        // Set completion listener
         taskAdapter.setOnTaskCompletionListener((task, isCompleted) -> {
             taskViewModel.updateTaskCompletion(task.getTaskId(), isCompleted);
             if (isCompleted) {
@@ -117,7 +105,6 @@ public class TaskListFragment extends Fragment {
     }
 
     private void setupButtonListeners() {
-        // FAB - Add new task
         fabAddTask.setOnClickListener(v -> {
             requireActivity().getSupportFragmentManager().beginTransaction()
                     .replace(R.id.fragment_container, new AddTaskFragment())
@@ -125,13 +112,11 @@ public class TaskListFragment extends Fragment {
                     .commit();
         });
 
-        // Filter buttons
         btnAll.setOnClickListener(v -> applyFilter("ALL"));
         btnToday.setOnClickListener(v -> applyFilter("TODAY"));
         btnWeek.setOnClickListener(v -> applyFilter("WEEK"));
-        btnMore.setOnClickListener(v -> applyFilter("MORE"));
+        btnOverdue.setOnClickListener(v -> applyFilter("OVERDUE"));
 
-        // Search functionality
         etSearch.addTextChangedListener(new TextWatcher() {
             @Override
             public void beforeTextChanged(CharSequence s, int start, int count, int after) {}
@@ -143,62 +128,157 @@ public class TaskListFragment extends Fragment {
 
             @Override
             public void afterTextChanged(Editable s) {
-                // Show/hide clear button
                 btnClearSearch.setVisibility(s.length() > 0 ? View.VISIBLE : View.GONE);
             }
         });
 
-        // Clear search button
         btnClearSearch.setOnClickListener(v -> {
             etSearch.setText("");
             btnClearSearch.setVisibility(View.GONE);
+            applyFilter(currentFilter); // Re-apply current filter
         });
     }
 
     private void observeTasks() {
         taskViewModel.getAllTasks().observe(getViewLifecycleOwner(), tasks -> {
             if (tasks != null) {
-                allTasks = tasks; // Store all tasks for filtering
+                allTasks = tasks;
+                applyFilter(currentFilter); // Apply current filter when data changes
+                updateStats(tasks);
 
-                if (!tasks.isEmpty()) {
-                    // Apply search filter if any
-                    String searchQuery = etSearch.getText().toString().trim();
-                    if (!searchQuery.isEmpty()) {
-                        filterTasks(searchQuery);
-                    } else {
-                        taskAdapter.setTasks(tasks);
-                    }
-
-                    updateStats(tasks);
-                    showTaskList();
-                } else {
+                // Show/hide empty state
+                if (tasks.isEmpty()) {
                     showEmptyState();
+                } else {
+                    showTaskList();
                 }
             }
         });
+    }
+
+    private void applyFilter(String filter) {
+        currentFilter = filter;
+        updateFilterButtons(filter);
+
+        if (allTasks == null || allTasks.isEmpty()) {
+            taskAdapter.setTasks(new ArrayList<>());
+            showEmptyState();
+            return;
+        }
+
+        List<com.midtermproject.mytaskmanagementApp.data.model.Task> filteredTasks = new ArrayList<>();
+        String today = DateTimeUtil.getCurrentDate();
+
+        switch (filter) {
+            case "ALL":
+                filteredTasks.addAll(allTasks);
+                break;
+
+            case "TODAY":
+                for (com.midtermproject.mytaskmanagementApp.data.model.Task task : allTasks) {
+                    if (DateTimeUtil.isToday(task.getDueDate()) && !task.isTaskCompleted()) {
+                        filteredTasks.add(task);
+                    }
+                }
+                break;
+
+            case "WEEK":
+                for (com.midtermproject.mytaskmanagementApp.data.model.Task task : allTasks) {
+                    if (isDueThisWeek(task.getDueDate()) && !task.isTaskCompleted()) {
+                        filteredTasks.add(task);
+                    }
+                }
+                break;
+
+            case "OVERDUE": // Show overdue
+                for (com.midtermproject.mytaskmanagementApp.data.model.Task task : allTasks) {
+                    if ((DateTimeUtil.isOverdue(task.getDueDate()) && !task.isTaskCompleted())) {
+                        filteredTasks.add(task);
+                    }
+                }
+                break;
+        }
+
+        // Apply search filter if there's a search query
+        String searchQuery = etSearch.getText().toString().trim();
+        if (!searchQuery.isEmpty()) {
+            filteredTasks = filterBySearch(filteredTasks, searchQuery);
+        }
+
+        taskAdapter.setTasks(filteredTasks);
+
+        // Update empty state text based on filter
+        if (filteredTasks.isEmpty()) {
+            String emptyText = getEmptyStateText(filter);
+            tvEmptyState.setText(emptyText);
+            showEmptyState();
+        } else {
+            showTaskList();
+        }
+    }
+
+    private boolean isDueThisWeek(String dueDate) {
+        try {
+            // Get today's date
+            String today = DateTimeUtil.getCurrentDate();
+
+            // Get date 7 days from now
+            String weekLater = DateTimeUtil.getDateDaysFromNow(7);
+
+            // Check if dueDate is between today and weekLater
+            java.text.SimpleDateFormat sdf = new java.text.SimpleDateFormat("yyyy-MM-dd", java.util.Locale.getDefault());
+            java.util.Date taskDate = sdf.parse(dueDate);
+            java.util.Date todayDate = sdf.parse(today);
+            java.util.Date weekLaterDate = sdf.parse(weekLater);
+
+            // Task is due this week if: today <= dueDate <= weekLater
+            return (taskDate.equals(todayDate) || taskDate.after(todayDate)) &&
+                    (taskDate.before(weekLaterDate) || taskDate.equals(weekLaterDate));
+        } catch (Exception e) {
+            return false;
+        }
+    }
+
+    private List<com.midtermproject.mytaskmanagementApp.data.model.Task> filterBySearch(
+            List<com.midtermproject.mytaskmanagementApp.data.model.Task> tasks, String query) {
+        List<com.midtermproject.mytaskmanagementApp.data.model.Task> result = new ArrayList<>();
+        String lowerQuery = query.toLowerCase();
+
+        for (com.midtermproject.mytaskmanagementApp.data.model.Task task : tasks) {
+            if (task.getTaskName().toLowerCase().contains(lowerQuery) ||
+                    (task.getTaskDescription() != null &&
+                            task.getTaskDescription().toLowerCase().contains(lowerQuery))) {
+                result.add(task);
+            }
+        }
+
+        return result;
+    }
+
+    private String getEmptyStateText(String filter) {
+        switch (filter) {
+            case "TODAY":
+                return "No tasks due today\n\nGreat job!";
+            case "WEEK":
+                return "No tasks due this week\n\nYou're on top of things!";
+            case "OVERDUE":
+                return "No overdue tasks\n\nEverything is under control!";
+            default:
+                return "No tasks yet\n\nCreate your first task";
+        }
     }
 
     private void filterTasks(String query) {
         if (allTasks.isEmpty()) return;
 
         if (query.isEmpty()) {
-            // Show all tasks
-            taskAdapter.setTasks(allTasks);
+            // If search is cleared, re-apply current filter
+            applyFilter(currentFilter);
         } else {
-            // Filter tasks by name or description
-            List<com.midtermproject.mytaskmanagementApp.data.model.Task> filteredTasks = new ArrayList<>();
-            String lowerQuery = query.toLowerCase();
-
-            for (com.midtermproject.mytaskmanagementApp.data.model.Task task : allTasks) {
-                if (task.getTaskName().toLowerCase().contains(lowerQuery) ||
-                        task.getTaskDescription().toLowerCase().contains(lowerQuery)) {
-                    filteredTasks.add(task);
-                }
-            }
-
+            // Filter tasks by search query
+            List<com.midtermproject.mytaskmanagementApp.data.model.Task> filteredTasks = filterBySearch(allTasks, query);
             taskAdapter.setTasks(filteredTasks);
 
-            // Show empty state if no results
             if (filteredTasks.isEmpty()) {
                 tvEmptyState.setText("No tasks found for: " + query);
                 showEmptyState();
@@ -208,31 +288,43 @@ public class TaskListFragment extends Fragment {
         }
     }
 
-    private void applyFilter(String filter) {
-        currentFilter = filter;
-        updateFilterButtons(filter);
-
-        // TODO: Implement actual date filtering
-        Toast.makeText(getContext(), "Filter: " + filter, Toast.LENGTH_SHORT).show();
-    }
-
     private void updateFilterButtons(String activeFilter) {
-        btnAll.setActivated("ALL".equals(activeFilter));
-        btnToday.setActivated("TODAY".equals(activeFilter));
-        btnWeek.setActivated("WEEK".equals(activeFilter));
-        btnMore.setActivated("MORE".equals(activeFilter));
+        // Reset all buttons
+        btnAll.setActivated(false);
+        btnToday.setActivated(false);
+        btnWeek.setActivated(false);
+        btnOverdue.setActivated(false);
+
+        // Set active button
+        switch (activeFilter) {
+            case "ALL":
+                btnAll.setActivated(true);
+                break;
+            case "TODAY":
+                btnToday.setActivated(true);
+                break;
+            case "WEEK":
+                btnWeek.setActivated(true);
+                break;
+            case "OVERDUE":
+                btnOverdue.setActivated(true);
+                break;
+        }
     }
 
     private void updateStats(List<com.midtermproject.mytaskmanagementApp.data.model.Task> tasks) {
         int total = tasks.size();
         int done = 0;
         int today = 0;
+        String currentDate = DateTimeUtil.getCurrentDate();
 
         for (com.midtermproject.mytaskmanagementApp.data.model.Task task : tasks) {
             if (task.isTaskCompleted()) {
                 done++;
             }
-            // TODO: Check if task is due today
+            if (DateTimeUtil.isToday(task.getDueDate()) && !task.isTaskCompleted()) {
+                today++;
+            }
         }
 
         tvTotalTasks.setText(String.valueOf(total));

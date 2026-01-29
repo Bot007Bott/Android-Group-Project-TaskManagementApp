@@ -1,13 +1,16 @@
 <?xml version="1.0" encoding="utf-8"?>
 <menu xmlns:android="http://schemas.android.com/apk/res/android">
 
-    <!-- Home icon -->
     <item
         android:id="@+id/nav_home"
         android:icon="@android:drawable/ic_menu_agenda"
         android:title="Home" />
 
-    <!-- Check/Done icon -->
+    <item
+        android:id="@+id/nav_categories"
+        android:icon="@android:drawable/ic_menu_sort_by_size"
+        android:title="Categories" />
+
     <item
         android:id="@+id/nav_completed"
         android:icon="@android:drawable/checkbox_on_background"
