@@ -109,8 +109,11 @@ public class TaskViewModel extends AndroidViewModel {
      * Get completed tasks
      * @return LiveData list of completed tasks
      */
+//    public LiveData<List<Task>> getCompletedTasks() {
+//        return completedTasks;
+//    }
     public LiveData<List<Task>> getCompletedTasks() {
-        return completedTasks;
+        return taskRepository.getCompletedTasks();
     }
 
     /**
@@ -159,4 +162,5 @@ public class TaskViewModel extends AndroidViewModel {
         }
         return null;
     }
+
 }

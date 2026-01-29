@@ -10,7 +10,6 @@ import android.widget.ArrayAdapter;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.Spinner;
-import android.widget.TextView;
 import android.widget.Toast;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
@@ -27,11 +26,11 @@ import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.List;
 
-public class AddTaskFragment extends Fragment {
+public class EditTaskFragment extends Fragment {
 
     private EditText etTaskName, etTaskDescription;
     private Spinner spinnerCategory;
-    private Button btnDueDate, btnSave, btnCancel;
+    private Button btnDueDate, btnUpdate, btnDelete, btnCancel;
     private Button btnPriorityLow, btnPriorityMedium, btnPriorityHigh;
 
     private TaskViewModel taskViewModel;
@@ -40,13 +39,15 @@ public class AddTaskFragment extends Fragment {
     private String selectedDueDate = "";
     private String selectedPriority = Constants.PRIORITY_MEDIUM;
     private List<Category> categoryList = new ArrayList<>();
+    private Task currentTask;
+    private int taskId;
 
     @Nullable
     @Override
     public View onCreateView(@NonNull LayoutInflater inflater,
                              @Nullable ViewGroup container,
                              @Nullable Bundle savedInstanceState) {
-        return inflater.inflate(R.layout.fragment_add_task, container, false);
+        return inflater.inflate(R.layout.fragment_edit_task, container, false);
     }
 
     @Override
@@ -55,9 +56,11 @@ public class AddTaskFragment extends Fragment {
 
         initViews(view);
         setupViewModels();
+        getTaskIdFromArguments();
+        loadTaskData();
         setupCategorySpinner();
-        setupClickListeners();
         setupPriorityButtons();
+        setupClickListeners();
     }
 
     private void initViews(View view) {
@@ -71,7 +74,8 @@ public class AddTaskFragment extends Fragment {
         btnPriorityHigh = view.findViewById(R.id.btn_priority_high);
 
         btnDueDate = view.findViewById(R.id.btn_due_date);
-        btnSave = view.findViewById(R.id.btn_save);
+        btnUpdate = view.findViewById(R.id.btn_update);
+        btnDelete = view.findViewById(R.id.btn_delete);
         btnCancel = view.findViewById(R.id.btn_cancel);
     }
 
@@ -80,20 +84,62 @@ public class AddTaskFragment extends Fragment {
         categoryViewModel = new ViewModelProvider(requireActivity()).get(CategoryViewModel.class);
     }
 
+    private void getTaskIdFromArguments() {
+        if (getArguments() != null) {
+            taskId = getArguments().getInt(Constants.EXTRA_TASK_ID, -1);
+        }
+    }
+
+    private void loadTaskData() {
+        if (taskId == -1) {
+            Toast.makeText(requireContext(), "Task not found", Toast.LENGTH_SHORT).show();
+            goBack();
+            return;
+        }
+
+        // Find the task
+        taskViewModel.getAllTasks().observe(getViewLifecycleOwner(), tasks -> {
+            if (tasks != null) {
+                for (Task task : tasks) {
+                    if (task.getTaskId() == taskId) {
+                        currentTask = task;
+                        populateForm(task);
+                        break;
+                    }
+                }
+            }
+        });
+    }
+
+    private void populateForm(Task task) {
+        etTaskName.setText(task.getTaskName());
+        etTaskDescription.setText(task.getTaskDescription());
+        selectedDueDate = task.getDueDate();
+        btnDueDate.setText("Due: " + DateTimeUtil.formatDateForDisplay(selectedDueDate));
+
+        // Set priority
+        selectedPriority = task.getPriority();
+        if (selectedPriority.equals(Constants.PRIORITY_LOW)) {
+            setActivePriorityButton(btnPriorityLow);
+        } else if (selectedPriority.equals(Constants.PRIORITY_MEDIUM)) {
+            setActivePriorityButton(btnPriorityMedium);
+        } else {
+            setActivePriorityButton(btnPriorityHigh);
+        }
+
+        // Category will be set when spinner loads
+    }
+
     private void setupCategorySpinner() {
         categoryViewModel.getAllCategories().observe(getViewLifecycleOwner(), categories -> {
             if (categories != null) {
                 categoryList = categories;
 
                 List<String> categoryNames = new ArrayList<>();
-                categoryNames.add("Select Category");
-                categoryNames.add("+ Add New Category");
-
                 for (Category category : categories) {
                     categoryNames.add(category.getCategoryName());
                 }
 
-                // SIMPLE ADAPTER - NO DESCRIPTION
                 ArrayAdapter<String> adapter = new ArrayAdapter<>(
                         requireContext(),
                         android.R.layout.simple_spinner_item,
@@ -102,34 +148,20 @@ public class AddTaskFragment extends Fragment {
                 adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
                 spinnerCategory.setAdapter(adapter);
 
-                // Handle spinner selection
-                spinnerCategory.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
-                    @Override
-                    public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
-                        if (position == 1) { // "+ Add New Category" selected
-                            openAddCategoryFragment();
-                            spinnerCategory.setSelection(0); // Reset to "Select Category"
+                // Select current task's category
+                if (currentTask != null) {
+                    for (int i = 0; i < categoryList.size(); i++) {
+                        if (categoryList.get(i).getCategoryId() == currentTask.getCategoryId()) {
+                            spinnerCategory.setSelection(i);
+                            break;
                         }
                     }
-
-                    @Override
-                    public void onNothingSelected(AdapterView<?> parent) {}
-                });
+                }
             }
         });
     }
 
-    private void openAddCategoryFragment() {
-        requireActivity().getSupportFragmentManager().beginTransaction()
-                .replace(R.id.fragment_container, new AddCategoryFragment())
-                .addToBackStack(null)
-                .commit();
-    }
-
     private void setupPriorityButtons() {
-        // Set initial active button
-        setActivePriorityButton(btnPriorityMedium);
-
         btnPriorityLow.setOnClickListener(v -> {
             selectedPriority = Constants.PRIORITY_LOW;
             setActivePriorityButton(btnPriorityLow);
@@ -147,7 +179,7 @@ public class AddTaskFragment extends Fragment {
     }
 
     private void setActivePriorityButton(Button activeButton) {
-        // Reset ALL buttons first
+        // Reset all
         btnPriorityLow.setBackgroundColor(getResources().getColor(android.R.color.transparent));
         btnPriorityMedium.setBackgroundColor(getResources().getColor(android.R.color.transparent));
         btnPriorityHigh.setBackgroundColor(getResources().getColor(android.R.color.transparent));
@@ -156,7 +188,7 @@ public class AddTaskFragment extends Fragment {
         btnPriorityMedium.setTextColor(getResources().getColor(android.R.color.black));
         btnPriorityHigh.setTextColor(getResources().getColor(android.R.color.black));
 
-        // Then set ACTIVE button
+        // Set active
         activeButton.setBackgroundColor(getResources().getColor(R.color.purple_500));
         activeButton.setTextColor(getResources().getColor(android.R.color.white));
     }
@@ -165,13 +197,14 @@ public class AddTaskFragment extends Fragment {
         // Due Date Picker
         btnDueDate.setOnClickListener(v -> showDatePicker());
 
-        // Save Button
-        btnSave.setOnClickListener(v -> saveTask());
+        // Update Button
+        btnUpdate.setOnClickListener(v -> updateTask());
+
+        // Delete Button
+        btnDelete.setOnClickListener(v -> deleteTask());
 
         // Cancel Button
-        btnCancel.setOnClickListener(v -> {
-            requireActivity().getSupportFragmentManager().popBackStack();
-        });
+        btnCancel.setOnClickListener(v -> goBack());
     }
 
     private void showDatePicker() {
@@ -194,7 +227,7 @@ public class AddTaskFragment extends Fragment {
         datePicker.show();
     }
 
-    private void saveTask() {
+    private void updateTask() {
         String taskName = etTaskName.getText().toString().trim();
         String description = etTaskDescription.getText().toString().trim();
 
@@ -209,37 +242,36 @@ public class AddTaskFragment extends Fragment {
             return;
         }
 
-        // Get selected category position
+        // Get category
         int selectedPosition = spinnerCategory.getSelectedItemPosition();
-
-        // Validate category selection
-        if (selectedPosition <= 1) { // 0 = "Select Category", 1 = "+ Add New Category"
+        if (selectedPosition < 0 || selectedPosition >= categoryList.size()) {
             Toast.makeText(requireContext(), "Please select a category", Toast.LENGTH_SHORT).show();
             return;
         }
 
-        // Get actual category ID (adjust for first 2 non-category items)
-        int categoryIndex = selectedPosition - 2; // Subtract "Select Category" and "+ Add New Category"
+        int categoryId = categoryList.get(selectedPosition).getCategoryId();
 
-        if (categoryIndex < 0 || categoryIndex >= categoryList.size()) {
-            Toast.makeText(requireContext(), "Invalid category selection", Toast.LENGTH_SHORT).show();
-            return;
+        // Update task
+        currentTask.setTaskName(taskName);
+        currentTask.setTaskDescription(description);
+        currentTask.setCategoryId(categoryId);
+        currentTask.setDueDate(selectedDueDate);
+        currentTask.setPriority(selectedPriority);
+
+        taskViewModel.updateTask(currentTask);
+        Toast.makeText(requireContext(), "Task updated!", Toast.LENGTH_SHORT).show();
+        goBack();
+    }
+
+    private void deleteTask() {
+        if (currentTask != null) {
+            taskViewModel.deleteTask(currentTask);
+            Toast.makeText(requireContext(), "Task deleted", Toast.LENGTH_SHORT).show();
+            goBack();
         }
+    }
 
-        int categoryId = categoryList.get(categoryIndex).getCategoryId();
-
-        // Create and save task
-        Task task = new Task(
-                categoryId,
-                taskName,
-                description,
-                selectedDueDate,
-                selectedPriority,
-                DateTimeUtil.getCurrentDate()
-        );
-
-        taskViewModel.insertTask(task);
-        Toast.makeText(requireContext(), "Task saved!", Toast.LENGTH_SHORT).show();
+    private void goBack() {
         requireActivity().getSupportFragmentManager().popBackStack();
     }
 }

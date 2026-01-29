@@ -39,9 +39,9 @@ public class CompletedTasksFragment extends Fragment {
 
         setupRecyclerView();
 
-        taskViewModel = new ViewModelProvider(this).get(TaskViewModel.class);
+        taskViewModel = new ViewModelProvider(requireActivity()).get(TaskViewModel.class);
 
-        // Observe only COMPLETED tasks
+        // IMPORTANT: Observe ONLY COMPLETED tasks
         taskViewModel.getCompletedTasks().observe(getViewLifecycleOwner(), tasks -> {
             if (tasks != null && !tasks.isEmpty()) {
                 taskAdapter.setTasks(tasks);
@@ -56,6 +56,22 @@ public class CompletedTasksFragment extends Fragment {
         taskAdapter = new TaskAdapter();
         recyclerView.setLayoutManager(new LinearLayoutManager(getContext()));
         recyclerView.setAdapter(taskAdapter);
+
+        // Make completed tasks clickable too
+        taskAdapter.setOnItemClickListener(task -> {
+            // Open TaskDetailFragment for completed tasks too
+            Bundle args = new Bundle();
+            args.putInt(com.midtermproject.mytaskmanagementApp.util.Constants.EXTRA_TASK_ID,
+                    task.getTaskId());
+
+            TaskDetailFragment fragment = new TaskDetailFragment();
+            fragment.setArguments(args);
+
+            requireActivity().getSupportFragmentManager().beginTransaction()
+                    .replace(R.id.fragment_container, fragment)
+                    .addToBackStack(null)
+                    .commit();
+        });
     }
 
     private void showTaskList() {
