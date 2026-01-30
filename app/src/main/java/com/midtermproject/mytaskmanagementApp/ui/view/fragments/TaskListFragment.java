@@ -3,6 +3,7 @@ package com.midtermproject.mytaskmanagementApp.ui.view.fragments;
 import android.os.Bundle;
 import android.text.Editable;
 import android.text.TextWatcher;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -18,10 +19,13 @@ import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 import com.google.android.material.floatingactionbutton.FloatingActionButton;
 import com.midtermproject.mytaskmanagementApp.R;
+import com.midtermproject.mytaskmanagementApp.data.model.Task;
 import com.midtermproject.mytaskmanagementApp.ui.adapter.TaskAdapter;
 import com.midtermproject.mytaskmanagementApp.ui.viewmodel.TaskViewModel;
 import com.midtermproject.mytaskmanagementApp.util.Constants;
 import com.midtermproject.mytaskmanagementApp.util.DateTimeUtil;
+import com.midtermproject.mytaskmanagementApp.util.NotificationHelper;
+
 import java.util.ArrayList;
 import java.util.List;
 
@@ -76,6 +80,17 @@ public class TaskListFragment extends Fragment {
         btnClearSearch = view.findViewById(R.id.btn_clear_search);
 
         setupButtonListeners();
+        Button btnTestNotification = view.findViewById(R.id.btn_test_notification);
+        btnTestNotification.setOnClickListener(v -> {
+            Log.d("NotificationDebug", "Test button clicked");
+            NotificationHelper.showTaskReminder(
+                    requireContext(),
+                    "Test Notification",
+                    "This is a test notification to check if notifications work",
+                    999
+            );
+            Toast.makeText(getContext(), "Test notification sent", Toast.LENGTH_SHORT).show();
+        });
     }
 
     private void setupRecyclerView() {
@@ -145,6 +160,8 @@ public class TaskListFragment extends Fragment {
                 allTasks = tasks;
                 applyFilter(currentFilter); // Apply current filter when data changes
                 updateStats(tasks);
+
+                checkAndShowDueTaskNotifications(tasks);
 
                 // Show/hide empty state
                 if (tasks.isEmpty()) {
@@ -340,5 +357,52 @@ public class TaskListFragment extends Fragment {
     private void showEmptyState() {
         recyclerView.setVisibility(View.GONE);
         tvEmptyState.setVisibility(View.VISIBLE);
+    }
+
+    private void checkAndShowDueTaskNotifications(List<Task> tasks) {
+        Log.d("NotificationDebug", "=== CHECKING TASKS FOR NOTIFICATIONS ===");
+
+        if (tasks == null || getContext() == null) {
+            return;
+        }
+
+        List<Task> dueTodayTasks = new ArrayList<>();
+
+        for (Task task : tasks) {
+            if (task.isTaskCompleted()) {
+                continue;
+            }
+
+            if (DateTimeUtil.isToday(task.getDueDate())) {
+                dueTodayTasks.add(task);
+                NotificationHelper.showDueTodayNotification(
+                        requireContext(),
+                        task.getTaskName(),
+                        task.getTaskId()
+                );
+            }
+        }
+
+        // SHOW DIALOG IF APP IS OPEN
+        if (!dueTodayTasks.isEmpty() && isAdded()) {
+            showDueTasksDialog(dueTodayTasks);
+        }
+    }
+
+    private void showDueTasksDialog(List<Task> dueTasks) {
+        StringBuilder message = new StringBuilder("Tasks due today:\n\n");
+        for (Task task : dueTasks) {
+            message.append("• ").append(task.getTaskName()).append("\n");
+        }
+
+        new androidx.appcompat.app.AlertDialog.Builder(requireContext())
+                .setTitle("📅 Tasks Due Today")
+                .setMessage(message.toString())
+                .setPositiveButton("OK", null)
+                .setNegativeButton("View Tasks", (dialog, which) -> {
+                    // Switch to "Today" filter
+                    applyFilter("TODAY");
+                })
+                .show();
     }
 }
