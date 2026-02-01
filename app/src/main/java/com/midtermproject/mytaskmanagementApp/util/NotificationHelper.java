@@ -85,7 +85,7 @@ public class NotificationHelper {
         Log.d("NotificationDebug", "Notifications enabled: " + hasPermission);
 
         if (hasPermission) {
-            notificationManager.notify(taskId, builder.build());
+//            notificationManager.notify(taskId, builder.build());
             Log.d("NotificationDebug", "Heads-up notification shown!");
         } else {
             Log.d("NotificationDebug", "Notifications are disabled");

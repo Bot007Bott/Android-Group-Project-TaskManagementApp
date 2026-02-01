@@ -9,6 +9,10 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.Button;
 import android.widget.EditText;
+import android.widget.LinearLayout;
+import android.widget.PopupMenu;
+import android.widget.EditText;
+import androidx.appcompat.app.AlertDialog;
 import android.widget.TextView;
 import android.widget.Toast;
 import androidx.annotation.NonNull;
@@ -17,10 +21,15 @@ import androidx.fragment.app.Fragment;
 import androidx.lifecycle.ViewModelProvider;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
+import android.content.Context;
+import android.view.inputmethod.InputMethodManager;
+
+import com.google.android.material.bottomnavigation.BottomNavigationView;
 import com.google.android.material.floatingactionbutton.FloatingActionButton;
 import com.midtermproject.mytaskmanagementApp.R;
 import com.midtermproject.mytaskmanagementApp.data.model.Task;
 import com.midtermproject.mytaskmanagementApp.ui.adapter.TaskAdapter;
+import com.midtermproject.mytaskmanagementApp.ui.view.activities.MainActivity;
 import com.midtermproject.mytaskmanagementApp.ui.viewmodel.TaskViewModel;
 import com.midtermproject.mytaskmanagementApp.util.Constants;
 import com.midtermproject.mytaskmanagementApp.util.DateTimeUtil;
@@ -29,7 +38,7 @@ import com.midtermproject.mytaskmanagementApp.util.NotificationHelper;
 import java.util.ArrayList;
 import java.util.List;
 
-public class TaskListFragment extends Fragment {
+public class TaskListFragment extends Fragment implements MainActivity.MenuCallback {
 
     private TaskViewModel taskViewModel;
     private TaskAdapter taskAdapter;
@@ -40,6 +49,7 @@ public class TaskListFragment extends Fragment {
     private FloatingActionButton fabAddTask;
     private EditText etSearch;
     private Button btnClearSearch;
+    private LinearLayout searchContainer;
 
     private String currentFilter = "ALL";
     private List<com.midtermproject.mytaskmanagementApp.data.model.Task> allTasks = new ArrayList<>();
@@ -60,6 +70,7 @@ public class TaskListFragment extends Fragment {
         setupRecyclerView();
         taskViewModel = new ViewModelProvider(this).get(TaskViewModel.class);
         observeTasks();
+        searchContainer.setVisibility(View.GONE);
     }
 
     private void initViews(View view) {
@@ -76,10 +87,12 @@ public class TaskListFragment extends Fragment {
         tvEmptyState = view.findViewById(R.id.tv_empty_state);
         fabAddTask = view.findViewById(R.id.fab_add_task);
 
+        searchContainer = view.findViewById(R.id.search_container);
         etSearch = view.findViewById(R.id.et_search);
         btnClearSearch = view.findViewById(R.id.btn_clear_search);
 
         setupButtonListeners();
+        setupSearch();
         Button btnTestNotification = view.findViewById(R.id.btn_test_notification);
         btnTestNotification.setOnClickListener(v -> {
             Log.d("NotificationDebug", "Test button clicked");
@@ -91,6 +104,116 @@ public class TaskListFragment extends Fragment {
             );
             Toast.makeText(getContext(), "Test notification sent", Toast.LENGTH_SHORT).show();
         });
+    }
+
+    private void setupSearch() {
+        // Live search as you type
+        etSearch.addTextChangedListener(new TextWatcher() {
+            @Override
+            public void beforeTextChanged(CharSequence s, int start, int count, int after) {}
+
+            @Override
+            public void onTextChanged(CharSequence s, int start, int before, int count) {
+                String query = s.toString().trim();
+                filterTasks(query);
+
+                // Show/hide clear button
+                if (query.isEmpty()) {
+                    btnClearSearch.setVisibility(View.GONE);
+                } else {
+                    btnClearSearch.setVisibility(View.VISIBLE);
+                }
+            }
+
+            @Override
+            public void afterTextChanged(Editable s) {}
+        });
+
+        // Clear button - clears search and hides search bar
+        btnClearSearch.setOnClickListener(v -> {
+            hideSearchBar();
+        });
+
+        // Hide search bar when user taps outside (if search is empty)
+        etSearch.setOnFocusChangeListener((v, hasFocus) -> {
+            if (!hasFocus) {
+                // Check after a short delay
+                etSearch.postDelayed(() -> {
+                    if (etSearch.getText().toString().trim().isEmpty()) {
+                        hideSearchBar();
+                    }
+                }, 200);
+            }
+        });
+    }
+
+    private void filterTasks(String query) {
+        if (query.isEmpty()) {
+            // Show original filtered list
+            applyFilter(currentFilter);
+        } else {
+            // Filter tasks based on search query
+            List<Task> filtered = new ArrayList<>();
+            for (Task task : allTasks) {
+                if (task.getTaskName().toLowerCase().contains(query.toLowerCase()) ||
+                        (task.getTaskDescription() != null &&
+                                task.getTaskDescription().toLowerCase().contains(query.toLowerCase()))) {
+                    filtered.add(task);
+                }
+            }
+
+            taskAdapter.setTasks(filtered);
+
+            if (filtered.isEmpty()) {
+                tvEmptyState.setText("No tasks found for: " + query);
+                showEmptyState();
+            } else {
+                showTaskList();
+            }
+        }
+    }
+
+    private void hideSearchBar() {
+        // Clear search text
+        etSearch.setText("");
+
+        // Hide search bar
+        searchContainer.setVisibility(View.GONE);
+
+        // Hide keyboard
+        hideKeyboard();
+
+        // Clear focus
+        etSearch.clearFocus();
+
+        // Show original filtered list
+        applyFilter(currentFilter);
+    }
+
+    public void toggleSearchBar() {
+        if (searchContainer.getVisibility() == View.VISIBLE) {
+            hideSearchBar();
+        } else {
+            searchContainer.setVisibility(View.VISIBLE);
+            etSearch.requestFocus();
+            showKeyboard();
+        }
+    }
+
+    private void showKeyboard() {
+        InputMethodManager imm = (InputMethodManager) requireContext()
+                .getSystemService(Context.INPUT_METHOD_SERVICE);
+        if (imm != null) {
+            imm.showSoftInput(etSearch, InputMethodManager.SHOW_IMPLICIT);
+        }
+    }
+
+    private void hideKeyboard() {
+        InputMethodManager imm = (InputMethodManager) requireContext()
+                .getSystemService(Context.INPUT_METHOD_SERVICE);
+        if (imm != null && etSearch != null) {
+            imm.hideSoftInputFromWindow(etSearch.getWindowToken(), 0);
+        }
     }
 
     private void setupRecyclerView() {
@@ -115,6 +238,9 @@ public class TaskListFragment extends Fragment {
             taskViewModel.updateTaskCompletion(task.getTaskId(), isCompleted);
             if (isCompleted) {
                 Toast.makeText(getContext(), "Task completed!", Toast.LENGTH_SHORT).show();
+                // Navigate to Completed tab
+                BottomNavigationView bottomNav = requireActivity().findViewById(R.id.bottom_navigation);
+                bottomNav.setSelectedItemId(R.id.nav_completed);
             }
         });
     }
@@ -131,27 +257,6 @@ public class TaskListFragment extends Fragment {
         btnToday.setOnClickListener(v -> applyFilter("TODAY"));
         btnWeek.setOnClickListener(v -> applyFilter("WEEK"));
         btnOverdue.setOnClickListener(v -> applyFilter("OVERDUE"));
-
-        etSearch.addTextChangedListener(new TextWatcher() {
-            @Override
-            public void beforeTextChanged(CharSequence s, int start, int count, int after) {}
-
-            @Override
-            public void onTextChanged(CharSequence s, int start, int before, int count) {
-                filterTasks(s.toString());
-            }
-
-            @Override
-            public void afterTextChanged(Editable s) {
-                btnClearSearch.setVisibility(s.length() > 0 ? View.VISIBLE : View.GONE);
-            }
-        });
-
-        btnClearSearch.setOnClickListener(v -> {
-            etSearch.setText("");
-            btnClearSearch.setVisibility(View.GONE);
-            applyFilter(currentFilter); // Re-apply current filter
-        });
     }
 
     private void observeTasks() {
@@ -188,7 +293,11 @@ public class TaskListFragment extends Fragment {
 
         switch (filter) {
             case "ALL":
-                filteredTasks.addAll(allTasks);
+                for (Task task : allTasks) {
+                    if (!task.isTaskCompleted()) {
+                        filteredTasks.add(task);
+                    }
+                }
                 break;
 
             case "TODAY":
@@ -214,12 +323,6 @@ public class TaskListFragment extends Fragment {
                     }
                 }
                 break;
-        }
-
-        // Apply search filter if there's a search query
-        String searchQuery = etSearch.getText().toString().trim();
-        if (!searchQuery.isEmpty()) {
-            filteredTasks = filterBySearch(filteredTasks, searchQuery);
         }
 
         taskAdapter.setTasks(filteredTasks);
@@ -285,48 +388,31 @@ public class TaskListFragment extends Fragment {
         }
     }
 
-    private void filterTasks(String query) {
-        if (allTasks.isEmpty()) return;
-
-        if (query.isEmpty()) {
-            // If search is cleared, re-apply current filter
-            applyFilter(currentFilter);
-        } else {
-            // Filter tasks by search query
-            List<com.midtermproject.mytaskmanagementApp.data.model.Task> filteredTasks = filterBySearch(allTasks, query);
-            taskAdapter.setTasks(filteredTasks);
-
-            if (filteredTasks.isEmpty()) {
-                tvEmptyState.setText("No tasks found for: " + query);
-                showEmptyState();
-            } else {
-                showTaskList();
-            }
-        }
-    }
-
     private void updateFilterButtons(String activeFilter) {
         // Reset all buttons
-        btnAll.setActivated(false);
-        btnToday.setActivated(false);
-        btnWeek.setActivated(false);
-        btnOverdue.setActivated(false);
+        Button[] buttons = {btnAll, btnToday, btnWeek, btnOverdue};
+        for (Button btn : buttons) {
+            btn.setActivated(false);
+            btn.setTextColor(getResources().getColor(R.color.purple_500));
+        }
 
-        // Set active button
+        Button activeButton;
         switch (activeFilter) {
-            case "ALL":
-                btnAll.setActivated(true);
-                break;
             case "TODAY":
-                btnToday.setActivated(true);
+                activeButton = btnToday;
                 break;
             case "WEEK":
-                btnWeek.setActivated(true);
+                activeButton = btnWeek;
                 break;
             case "OVERDUE":
-                btnOverdue.setActivated(true);
+                activeButton = btnOverdue;
+                break;
+            default:
+                activeButton = btnAll;
                 break;
         }
+        activeButton.setActivated(true);
+        activeButton.setTextColor(getResources().getColor(android.R.color.white));
     }
 
     private void updateStats(List<com.midtermproject.mytaskmanagementApp.data.model.Task> tasks) {
@@ -404,5 +490,45 @@ public class TaskListFragment extends Fragment {
                     applyFilter("TODAY");
                 })
                 .show();
+    }
+
+    @Override
+    public void showMenu(View anchorView) {
+        PopupMenu popup = new PopupMenu(requireContext(), anchorView);
+        popup.inflate(R.menu.menu_task_options);
+        popup.setOnMenuItemClickListener(item -> {
+            int id = item.getItemId();
+            if (id == R.id.menu_sort_date) {
+                sortTasks("DATE");
+            } else if (id == R.id.menu_sort_priority) {
+                sortTasks("PRIORITY");
+            }
+            return true;
+        });
+        popup.show();
+    }
+
+    private void sortTasks(String type) {
+        List<Task> sorted = new ArrayList<>(taskAdapter.getTasks());
+        if (type.equals("DATE")) {
+            sorted.sort((a, b) -> a.getDueDate().compareTo(b.getDueDate()));
+        } else if (type.equals("PRIORITY")) {
+            sorted.sort((a, b) -> {
+                int orderA = getPriorityOrder(a.getPriority());
+                int orderB = getPriorityOrder(b.getPriority());
+                return Integer.compare(orderA, orderB);
+            });
+        }
+        taskAdapter.setTasks(sorted);
+        showTaskList();
+    }
+
+    private int getPriorityOrder(String priority) {
+        switch (priority) {
+            case "HIGH": return 0;
+            case "MEDIUM": return 1;
+            case "LOW": return 2;
+            default: return 3;
+        }
     }
 }

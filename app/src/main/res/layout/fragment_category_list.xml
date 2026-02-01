@@ -19,6 +19,35 @@
             android:textStyle="bold"
             android:layout_marginBottom="16dp" />
 
+        <LinearLayout
+            android:id="@+id/search_container"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:layout_marginBottom="16dp"
+            android:background="@drawable/search_background"
+            android:padding="8dp"
+            android:visibility="gone">
+
+            <EditText
+                android:id="@+id/et_search"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:hint="Search categories..."
+                android:inputType="text"
+                android:maxLines="1"
+                android:background="@null"
+                android:padding="8dp" />
+
+            <Button
+                android:id="@+id/btn_clear_search"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="X"
+                android:visibility="gone" />
+        </LinearLayout>
+
         <androidx.recyclerview.widget.RecyclerView
             android:id="@+id/recycler_view_categories"
             android:layout_width="match_parent"

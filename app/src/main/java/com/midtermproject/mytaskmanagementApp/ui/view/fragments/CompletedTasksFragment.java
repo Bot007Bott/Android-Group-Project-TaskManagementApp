@@ -5,12 +5,16 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.TextView;
+import android.widget.Toast;
+
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.fragment.app.Fragment;
 import androidx.lifecycle.ViewModelProvider;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
+
+import com.google.android.material.bottomnavigation.BottomNavigationView;
 import com.midtermproject.mytaskmanagementApp.R;
 import com.midtermproject.mytaskmanagementApp.ui.adapter.TaskAdapter;
 import com.midtermproject.mytaskmanagementApp.ui.viewmodel.TaskViewModel;
@@ -57,9 +61,7 @@ public class CompletedTasksFragment extends Fragment {
         recyclerView.setLayoutManager(new LinearLayoutManager(getContext()));
         recyclerView.setAdapter(taskAdapter);
 
-        // Make completed tasks clickable too
         taskAdapter.setOnItemClickListener(task -> {
-            // Open TaskDetailFragment for completed tasks too
             Bundle args = new Bundle();
             args.putInt(com.midtermproject.mytaskmanagementApp.util.Constants.EXTRA_TASK_ID,
                     task.getTaskId());
@@ -71,6 +73,15 @@ public class CompletedTasksFragment extends Fragment {
                     .replace(R.id.fragment_container, fragment)
                     .addToBackStack(null)
                     .commit();
+        });
+
+        taskAdapter.setOnTaskCompletionListener((task, isCompleted) -> {
+            taskViewModel.updateTaskCompletion(task.getTaskId(), isCompleted);
+            if (!isCompleted) {
+                Toast.makeText(getContext(), "Task moved back to pending", Toast.LENGTH_SHORT).show();
+                BottomNavigationView bottomNav = requireActivity().findViewById(R.id.bottom_navigation);
+                bottomNav.setSelectedItemId(R.id.nav_home);
+            }
         });
     }
 

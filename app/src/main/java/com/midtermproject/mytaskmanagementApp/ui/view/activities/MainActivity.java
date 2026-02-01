@@ -5,6 +5,7 @@ import android.app.NotificationManager;
 import android.content.pm.PackageManager;
 import android.os.Build;
 import android.os.Bundle;
+import android.view.View;
 import android.widget.Toast;
 
 import androidx.annotation.NonNull;
@@ -41,6 +42,22 @@ public class MainActivity extends AppCompatActivity {
         requestNotificationPermission();
 
         setupBottomNavigation();
+
+        findViewById(R.id.btn_search).setOnClickListener(v -> {
+            Fragment current = getSupportFragmentManager().findFragmentById(R.id.fragment_container);
+            if (current instanceof TaskListFragment) {
+                ((TaskListFragment) current).toggleSearchBar();
+            } else if (current instanceof CategoryListFragment) {
+                ((CategoryListFragment) current).toggleSearchBar();
+            }
+        });
+
+        findViewById(R.id.btn_menu).setOnClickListener(v -> {
+            Fragment current = getSupportFragmentManager().findFragmentById(R.id.fragment_container);
+            if (current instanceof MenuCallback) {
+                ((MenuCallback) current).showMenu(v);
+            }
+        });
 
         // Load Home fragment (TaskListFragment) on start
         if (savedInstanceState == null) {
@@ -105,5 +122,9 @@ public class MainActivity extends AppCompatActivity {
         getSupportFragmentManager().beginTransaction()
                 .replace(R.id.fragment_container, fragment)
                 .commit();
+    }
+
+    public interface MenuCallback {
+        void showMenu(View anchorView);
     }
 }

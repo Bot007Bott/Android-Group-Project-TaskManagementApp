@@ -67,6 +67,10 @@ public class TaskAdapter extends RecyclerView.Adapter<TaskAdapter.TaskViewHolder
         return tasks.get(position);
     }
 
+    public List<Task> getTasks() {
+        return tasks;
+    }
+
     class TaskViewHolder extends RecyclerView.ViewHolder {
         private TextView tvTaskName, tvDueDate, tvPriority;
         private CheckBox cbCompleted;
