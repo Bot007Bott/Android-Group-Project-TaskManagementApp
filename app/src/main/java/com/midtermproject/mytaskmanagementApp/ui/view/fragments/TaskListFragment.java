@@ -94,16 +94,16 @@ public class TaskListFragment extends Fragment implements MainActivity.MenuCallb
         setupButtonListeners();
         setupSearch();
         Button btnTestNotification = view.findViewById(R.id.btn_test_notification);
-        btnTestNotification.setOnClickListener(v -> {
-            Log.d("NotificationDebug", "Test button clicked");
-            NotificationHelper.showTaskReminder(
-                    requireContext(),
-                    "Test Notification",
-                    "This is a test notification to check if notifications work",
-                    999
-            );
-            Toast.makeText(getContext(), "Test notification sent", Toast.LENGTH_SHORT).show();
-        });
+//        btnTestNotification.setOnClickListener(v -> {
+//            Log.d("NotificationDebug", "Test button clicked");
+//            NotificationHelper.showTaskReminder(
+//                    requireContext(),
+//                    "Test Notification",
+//                    "This is a test notification to check if notifications work",
+//                    999
+//            );
+//            Toast.makeText(getContext(), "Test notification sent", Toast.LENGTH_SHORT).show();
+//        });
     }
 
     private void setupSearch() {

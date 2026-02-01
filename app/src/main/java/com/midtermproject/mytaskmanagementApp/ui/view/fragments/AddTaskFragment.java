@@ -9,12 +9,15 @@ import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
 import android.widget.Button;
 import android.widget.EditText;
+import android.widget.ImageView;
 import android.widget.Spinner;
 import android.widget.Toast;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.fragment.app.Fragment;
 import androidx.lifecycle.ViewModelProvider;
+
+import com.google.android.material.bottomnavigation.BottomNavigationView;
 import com.midtermproject.mytaskmanagementApp.R;
 import com.midtermproject.mytaskmanagementApp.data.model.Category;
 import com.midtermproject.mytaskmanagementApp.data.model.Task;
@@ -39,6 +42,7 @@ public class AddTaskFragment extends Fragment {
     private String selectedDueDate = "";
     private String selectedPriority = Constants.PRIORITY_MEDIUM;
     private List<Category> categoryList = new ArrayList<>();
+
 
     @Nullable
     @Override
@@ -75,6 +79,11 @@ public class AddTaskFragment extends Fragment {
         btnDueDate = view.findViewById(R.id.btn_due_date);
         btnSave = view.findViewById(R.id.btn_save);
         btnCancel = view.findViewById(R.id.btn_cancel);
+
+        ImageView btnBackIcon = view.findViewById(R.id.ic_back);
+        btnBackIcon.setOnClickListener(v -> {
+            requireActivity().getSupportFragmentManager().popBackStack();
+        });
     }
 
     private void setupViewModels() {
