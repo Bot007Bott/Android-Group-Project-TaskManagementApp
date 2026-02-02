@@ -9,6 +9,7 @@ import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
 import android.widget.Button;
 import android.widget.EditText;
+import android.widget.ImageView;
 import android.widget.Spinner;
 import android.widget.Toast;
 import androidx.annotation.NonNull;
@@ -41,6 +42,7 @@ public class EditTaskFragment extends Fragment {
     private List<Category> categoryList = new ArrayList<>();
     private Task currentTask;
     private int taskId;
+    private ImageView btnBack;
 
     @Nullable
     @Override
@@ -77,6 +79,7 @@ public class EditTaskFragment extends Fragment {
         btnUpdate = view.findViewById(R.id.btn_update);
         btnDelete = view.findViewById(R.id.btn_delete);
         btnCancel = view.findViewById(R.id.btn_cancel);
+        btnBack = view.findViewById(R.id.btn_back_edit_task);
     }
 
     private void setupViewModels() {
@@ -201,10 +204,23 @@ public class EditTaskFragment extends Fragment {
         btnUpdate.setOnClickListener(v -> updateTask());
 
         // Delete Button
-        btnDelete.setOnClickListener(v -> deleteTask());
+        btnDelete.setOnClickListener(v -> showDeleteDialog());
 
-        // Cancel Button
-        btnCancel.setOnClickListener(v -> goBack());
+        btnCancel.setOnClickListener(v -> {
+            if (hasUnsavedChanges()) {
+                showDiscardDialog();
+            } else {
+                goBack();
+            }
+        });
+
+        btnBack.setOnClickListener(v -> {
+            if (hasUnsavedChanges()) {
+                showDiscardDialog();
+            } else {
+                goBack();
+            }
+        });
     }
 
     private void showDatePicker() {
@@ -269,6 +285,40 @@ public class EditTaskFragment extends Fragment {
             Toast.makeText(requireContext(), "Task deleted", Toast.LENGTH_SHORT).show();
             goBack();
         }
+    }
+
+    private boolean hasUnsavedChanges() {
+        if (currentTask == null) return false;
+
+        String taskName = etTaskName.getText().toString().trim();
+        String description = etTaskDescription.getText().toString().trim();
+
+        return !taskName.equals(currentTask.getTaskName()) ||
+                !description.equals(currentTask.getTaskDescription()) ||
+                !selectedDueDate.equals(currentTask.getDueDate()) ||
+                !selectedPriority.equals(currentTask.getPriority());
+    }
+
+    private void showDiscardDialog() {
+        new androidx.appcompat.app.AlertDialog.Builder(requireContext())
+                .setTitle("Discard Changes?")
+                .setMessage("You have unsaved changes. Are you sure you want to leave?")
+                .setPositiveButton("Discard", (dialog, which) -> goBack())
+                .setNegativeButton("Cancel", null)
+                .show();
+    }
+
+    private void showDeleteDialog() {
+        new androidx.appcompat.app.AlertDialog.Builder(requireContext())
+                .setTitle("Delete Task?")
+                .setMessage("Are you sure you want to delete this task?")
+                .setPositiveButton("Delete", (dialog, which) -> {
+                    taskViewModel.deleteTask(currentTask);
+                    Toast.makeText(requireContext(), "Task deleted", Toast.LENGTH_SHORT).show();
+                    goBack();
+                })
+                .setNegativeButton("Cancel", null)
+                .show();
     }
 
     private void goBack() {

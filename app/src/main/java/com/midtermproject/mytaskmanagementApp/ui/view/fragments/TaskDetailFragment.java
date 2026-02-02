@@ -6,6 +6,7 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.Button;
 import android.widget.CheckBox;
+import android.widget.ImageView;
 import android.widget.TextView;
 import android.widget.Toast;
 import androidx.annotation.NonNull;
@@ -31,6 +32,8 @@ public class TaskDetailFragment extends Fragment {
     private int taskId;
     private CategoryViewModel categoryViewModel;
     private String categoryName = "Loading...";
+
+    private ImageView btn_arrow_back;
 
     @Nullable
     @Override
@@ -62,6 +65,8 @@ public class TaskDetailFragment extends Fragment {
         btnEdit = view.findViewById(R.id.btn_edit);
         btnDelete = view.findViewById(R.id.btn_delete);
         btnBack = view.findViewById(R.id.btn_back);
+        btn_arrow_back = view.findViewById(R.id.btn_back_detail_task);
+
     }
 
     private void setupViewModels() {
@@ -170,6 +175,7 @@ public class TaskDetailFragment extends Fragment {
 
         // Back button
         btnBack.setOnClickListener(v -> goBack());
+        btn_arrow_back.setOnClickListener(v->goBack());
     }
 
     private void showDeleteConfirmDialog() {
@@ -185,6 +191,11 @@ public class TaskDetailFragment extends Fragment {
                 .show();
     }
     private void goBack() {
+        // Show buttons again
+        View btnSearch = requireActivity().findViewById(R.id.btn_search);
+        View btnMenu = requireActivity().findViewById(R.id.btn_menu);
+        if (btnSearch != null) btnSearch.setVisibility(View.VISIBLE);
+        if (btnMenu != null) btnMenu.setVisibility(View.VISIBLE);
         requireActivity().getSupportFragmentManager().popBackStack();
     }
 }

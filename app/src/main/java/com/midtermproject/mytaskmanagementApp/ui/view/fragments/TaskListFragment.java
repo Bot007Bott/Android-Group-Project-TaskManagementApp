@@ -71,7 +71,6 @@ public class TaskListFragment extends Fragment implements MainActivity.MenuCallb
     @Override
     public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
         super.onViewCreated(view, savedInstanceState);
-
         initViews(view);
         setupRecyclerView();
         taskViewModel = new ViewModelProvider(this).get(TaskViewModel.class);
@@ -200,6 +199,12 @@ public class TaskListFragment extends Fragment implements MainActivity.MenuCallb
         recyclerView.setAdapter(taskAdapter);
 
         taskAdapter.setOnItemClickListener(task -> {
+            // Hide buttons
+            View btnSearch = requireActivity().findViewById(R.id.btn_search);
+            View btnMenu = requireActivity().findViewById(R.id.btn_menu);
+            if (btnSearch != null) btnSearch.setVisibility(View.GONE);
+            if (btnMenu != null) btnMenu.setVisibility(View.GONE);
+
             Bundle args = new Bundle();
             args.putInt(Constants.EXTRA_TASK_ID, task.getTaskId());
 
