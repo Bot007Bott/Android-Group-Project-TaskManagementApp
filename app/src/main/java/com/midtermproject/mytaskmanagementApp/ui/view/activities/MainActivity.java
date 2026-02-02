@@ -38,7 +38,6 @@ public class MainActivity extends AppCompatActivity {
         }
         NotificationHelper.createNotificationChannel(this);
 
-        // Request notification permission for Android 13+
         requestNotificationPermission();
 
         setupBottomNavigation();
@@ -98,16 +97,24 @@ public class MainActivity extends AppCompatActivity {
 
     private void setupBottomNavigation() {
         BottomNavigationView bottomNav = findViewById(R.id.bottom_navigation);
+        View btnSearch = findViewById(R.id.btn_search);
+        View btnMenu = findViewById(R.id.btn_menu);
 
         bottomNav.setOnNavigationItemSelectedListener(item -> {
             Fragment selectedFragment = null;
 
             if (item.getItemId() == R.id.nav_home) {
                 selectedFragment = new TaskListFragment();
+                btnSearch.setVisibility(View.VISIBLE);
+                btnMenu.setVisibility(View.VISIBLE);
             } else if (item.getItemId() == R.id.nav_categories) {
                 selectedFragment = new CategoryListFragment();
+                btnSearch.setVisibility(View.VISIBLE);
+                btnMenu.setVisibility(View.VISIBLE);
             } else if (item.getItemId() == R.id.nav_completed) {
                 selectedFragment = new CompletedTasksFragment();
+                btnSearch.setVisibility(View.GONE);
+                btnMenu.setVisibility(View.GONE);
             }
 
             if (selectedFragment != null) {

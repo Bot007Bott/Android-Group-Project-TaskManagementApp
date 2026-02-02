@@ -13,6 +13,7 @@ import androidx.core.app.NotificationManagerCompat;
 import com.midtermproject.mytaskmanagementApp.R;
 import com.midtermproject.mytaskmanagementApp.ui.view.activities.MainActivity;
 
+
 public class NotificationHelper {
 
     private static final String CHANNEL_ID = "task_reminders";
@@ -20,7 +21,6 @@ public class NotificationHelper {
     private static final String CHANNEL_DESCRIPTION = "Notifications for task reminders and due dates";
 
     public static void createNotificationChannel(Context context) {
-        Log.d("NotificationDebug", "Creating notification channel with HIGH importance");
 
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             // HIGH importance for heads-up notifications
@@ -39,15 +39,10 @@ public class NotificationHelper {
 
             NotificationManager notificationManager = context.getSystemService(NotificationManager.class);
             notificationManager.createNotificationChannel(channel);
-            Log.d("NotificationDebug", "Notification channel created with HIGH importance");
         }
     }
 
     public static void showTaskReminder(Context context, String title, String message, int taskId) {
-        Log.d("NotificationDebug", "=== SHOWING HEADS-UP NOTIFICATION ===");
-        Log.d("NotificationDebug", "Title: " + title);
-        Log.d("NotificationDebug", "Message: " + message);
-        Log.d("NotificationDebug", "Task ID: " + taskId);
 
         // Create an intent for when notification is tapped
         Intent intent = new Intent(context, MainActivity.class);
@@ -82,32 +77,27 @@ public class NotificationHelper {
         NotificationManagerCompat notificationManager = NotificationManagerCompat.from(context);
 
         boolean hasPermission = notificationManager.areNotificationsEnabled();
-        Log.d("NotificationDebug", "Notifications enabled: " + hasPermission);
 
-        if (hasPermission) {
-//            notificationManager.notify(taskId, builder.build());
-            Log.d("NotificationDebug", "Heads-up notification shown!");
-        } else {
-            Log.d("NotificationDebug", "Notifications are disabled");
+        try {
+            notificationManager.notify(taskId, builder.build());
+        } catch (SecurityException e) {
+            // Permission not granted
         }
     }
 
     public static void showDueTodayNotification(Context context, String taskName, int taskId) {
-        Log.d("NotificationDebug", "Showing due today notification for: " + taskName);
         String title = "📅 Task Due Today";
         String message = "Don't forget: " + taskName;
         showTaskReminder(context, title, message, taskId);
     }
 
     public static void showOverdueNotification(Context context, String taskName, int taskId) {
-        Log.d("NotificationDebug", "Showing overdue notification for: " + taskName);
         String title = "⚠️ Task Overdue!";
         String message = taskName + " is overdue. Complete it soon!";
         showTaskReminder(context, title, message, taskId);
     }
 
     public static void showTomorrowNotification(Context context, String taskName, int taskId) {
-        Log.d("NotificationDebug", "Showing tomorrow notification for: " + taskName);
         String title = "📝 Task Due Tomorrow";
         String message = "Reminder: " + taskName + " is due tomorrow";
         showTaskReminder(context, title, message, taskId);

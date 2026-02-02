@@ -164,9 +164,7 @@ public class TaskDetailFragment extends Fragment {
         // Delete button
         btnDelete.setOnClickListener(v -> {
             if (currentTask != null) {
-                taskViewModel.deleteTask(currentTask);
-                Toast.makeText(requireContext(), "Task deleted", Toast.LENGTH_SHORT).show();
-                goBack();
+                showDeleteConfirmDialog();
             }
         });
 
@@ -174,6 +172,18 @@ public class TaskDetailFragment extends Fragment {
         btnBack.setOnClickListener(v -> goBack());
     }
 
+    private void showDeleteConfirmDialog() {
+        new androidx.appcompat.app.AlertDialog.Builder(requireContext())
+                .setTitle("Delete Task?")
+                .setMessage("Are you sure you want to delete this task?")
+                .setPositiveButton("Delete", (dialog, which) -> {
+                    taskViewModel.deleteTask(currentTask);
+                    Toast.makeText(requireContext(), "Task deleted", Toast.LENGTH_SHORT).show();
+                    goBack();
+                })
+                .setNegativeButton("Cancel", null)
+                .show();
+    }
     private void goBack() {
         requireActivity().getSupportFragmentManager().popBackStack();
     }

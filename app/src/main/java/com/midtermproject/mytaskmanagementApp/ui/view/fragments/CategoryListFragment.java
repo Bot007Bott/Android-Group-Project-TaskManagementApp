@@ -226,12 +226,6 @@ public class CategoryListFragment extends Fragment implements MainActivity.MenuC
             public void onTextChanged(CharSequence s, int start, int before, int count) {
                 String query = s.toString().trim();
                 filterCategories(query);
-
-                if (query.isEmpty()) {
-                    btnClearSearch.setVisibility(View.GONE);
-                } else {
-                    btnClearSearch.setVisibility(View.VISIBLE);
-                }
             }
 
             @Override

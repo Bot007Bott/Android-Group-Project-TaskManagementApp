@@ -36,7 +36,9 @@ import com.midtermproject.mytaskmanagementApp.util.DateTimeUtil;
 import com.midtermproject.mytaskmanagementApp.util.NotificationHelper;
 
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 public class TaskListFragment extends Fragment implements MainActivity.MenuCallback {
 
@@ -53,6 +55,10 @@ public class TaskListFragment extends Fragment implements MainActivity.MenuCallb
 
     private String currentFilter = "ALL";
     private List<com.midtermproject.mytaskmanagementApp.data.model.Task> allTasks = new ArrayList<>();
+
+    private static Set<Integer> notifiedTaskIds = new HashSet<>();
+
+    private static boolean dialogShownThisSession = false;
 
     @Nullable
     @Override
@@ -94,16 +100,6 @@ public class TaskListFragment extends Fragment implements MainActivity.MenuCallb
         setupButtonListeners();
         setupSearch();
         Button btnTestNotification = view.findViewById(R.id.btn_test_notification);
-//        btnTestNotification.setOnClickListener(v -> {
-//            Log.d("NotificationDebug", "Test button clicked");
-//            NotificationHelper.showTaskReminder(
-//                    requireContext(),
-//                    "Test Notification",
-//                    "This is a test notification to check if notifications work",
-//                    999
-//            );
-//            Toast.makeText(getContext(), "Test notification sent", Toast.LENGTH_SHORT).show();
-//        });
     }
 
     private void setupSearch() {
@@ -116,13 +112,6 @@ public class TaskListFragment extends Fragment implements MainActivity.MenuCallb
             public void onTextChanged(CharSequence s, int start, int before, int count) {
                 String query = s.toString().trim();
                 filterTasks(query);
-
-                // Show/hide clear button
-                if (query.isEmpty()) {
-                    btnClearSearch.setVisibility(View.GONE);
-                } else {
-                    btnClearSearch.setVisibility(View.VISIBLE);
-                }
             }
 
             @Override
@@ -132,18 +121,6 @@ public class TaskListFragment extends Fragment implements MainActivity.MenuCallb
         // Clear button - clears search and hides search bar
         btnClearSearch.setOnClickListener(v -> {
             hideSearchBar();
-        });
-
-        // Hide search bar when user taps outside (if search is empty)
-        etSearch.setOnFocusChangeListener((v, hasFocus) -> {
-            if (!hasFocus) {
-                // Check after a short delay
-                etSearch.postDelayed(() -> {
-                    if (etSearch.getText().toString().trim().isEmpty()) {
-                        hideSearchBar();
-                    }
-                }, 200);
-            }
         });
     }
 
@@ -195,6 +172,7 @@ public class TaskListFragment extends Fragment implements MainActivity.MenuCallb
             hideSearchBar();
         } else {
             searchContainer.setVisibility(View.VISIBLE);
+            etSearch.setText("");
             etSearch.requestFocus();
             showKeyboard();
         }
@@ -446,7 +424,6 @@ public class TaskListFragment extends Fragment implements MainActivity.MenuCallb
     }
 
     private void checkAndShowDueTaskNotifications(List<Task> tasks) {
-        Log.d("NotificationDebug", "=== CHECKING TASKS FOR NOTIFICATIONS ===");
 
         if (tasks == null || getContext() == null) {
             return;
@@ -461,17 +438,41 @@ public class TaskListFragment extends Fragment implements MainActivity.MenuCallb
 
             if (DateTimeUtil.isToday(task.getDueDate())) {
                 dueTodayTasks.add(task);
-                NotificationHelper.showDueTodayNotification(
-                        requireContext(),
-                        task.getTaskName(),
-                        task.getTaskId()
-                );
+                if (!notifiedTaskIds.contains(task.getTaskId())) {
+                    NotificationHelper.showDueTodayNotification(
+                            requireContext(),
+                            task.getTaskName(),
+                            task.getTaskId()
+                    );
+                    notifiedTaskIds.add(task.getTaskId());
+                }
+            }
+            if (DateTimeUtil.isOverdue(task.getDueDate())) {
+                if (!notifiedTaskIds.contains(task.getTaskId())) {
+                    NotificationHelper.showOverdueNotification(
+                            requireContext(),
+                            task.getTaskName(),
+                            task.getTaskId()
+                    );
+                    notifiedTaskIds.add(task.getTaskId());
+                }
+            }
+            if (DateTimeUtil.isTomorrow(task.getDueDate())) {
+                if (!notifiedTaskIds.contains(task.getTaskId())) {
+                    NotificationHelper.showTomorrowNotification(
+                            requireContext(),
+                            task.getTaskName(),
+                            task.getTaskId()
+                    );
+                    notifiedTaskIds.add(task.getTaskId());
+                }
             }
         }
 
         // SHOW DIALOG IF APP IS OPEN
-        if (!dueTodayTasks.isEmpty() && isAdded()) {
+        if (!dueTodayTasks.isEmpty() && isAdded() && !dialogShownThisSession) {
             showDueTasksDialog(dueTodayTasks);
+            dialogShownThisSession = true;
         }
     }
 

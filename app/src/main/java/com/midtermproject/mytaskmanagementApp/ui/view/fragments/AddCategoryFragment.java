@@ -6,6 +6,7 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.Button;
 import android.widget.EditText;
+import android.widget.ImageView;
 import android.widget.Toast;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
@@ -21,6 +22,7 @@ public class AddCategoryFragment extends Fragment {
     private EditText etCategoryName, etCategoryDescription;
     private Button btnSave, btnCancel;
     private CategoryViewModel categoryViewModel;
+    private ImageView btnBack;
 
     @Nullable
     @Override
@@ -39,6 +41,7 @@ public class AddCategoryFragment extends Fragment {
         etCategoryDescription = view.findViewById(R.id.et_category_description);
         btnSave = view.findViewById(R.id.btn_save_category);
         btnCancel = view.findViewById(R.id.btn_cancel_category);
+        btnBack = view.findViewById(R.id.btn_back_category);
 
         // Initialize ViewModel
         categoryViewModel = new ViewModelProvider(requireActivity())
@@ -46,7 +49,20 @@ public class AddCategoryFragment extends Fragment {
 
         // Set click listeners
         btnSave.setOnClickListener(v -> saveCategory());
-        btnCancel.setOnClickListener(v -> goBack());
+        btnCancel.setOnClickListener(v -> {
+            if (hasUnsavedChanges()) {
+                showDiscardDialog();
+            } else {
+                goBack();
+            }
+        });
+        btnBack.setOnClickListener(v -> {
+            if (hasUnsavedChanges()) {
+                showDiscardDialog();
+            } else {
+                goBack();
+            }
+        });
     }
 
     private void saveCategory() {
@@ -74,6 +90,20 @@ public class AddCategoryFragment extends Fragment {
 
         // Go back
         goBack();
+    }
+
+    private boolean hasUnsavedChanges() {
+        return !etCategoryName.getText().toString().trim().isEmpty() ||
+                !etCategoryDescription.getText().toString().trim().isEmpty();
+    }
+
+    private void showDiscardDialog() {
+        new androidx.appcompat.app.AlertDialog.Builder(requireContext())
+                .setTitle("Discard Changes?")
+                .setMessage("You have unsaved changes. Are you sure you want to leave?")
+                .setPositiveButton("Discard", (dialog, which) -> goBack())
+                .setNegativeButton("Cancel", null)
+                .show();
     }
 
     private void goBack() {

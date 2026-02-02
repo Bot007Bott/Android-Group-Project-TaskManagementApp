@@ -2,6 +2,7 @@ package com.midtermproject.mytaskmanagementApp.ui.view.fragments;
 
 import android.app.DatePickerDialog;
 import android.os.Bundle;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -28,6 +29,7 @@ import com.midtermproject.mytaskmanagementApp.util.DateTimeUtil;
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.List;
+import androidx.appcompat.app.AlertDialog;
 
 public class AddTaskFragment extends Fragment {
 
@@ -42,6 +44,8 @@ public class AddTaskFragment extends Fragment {
     private String selectedDueDate = "";
     private String selectedPriority = Constants.PRIORITY_MEDIUM;
     private List<Category> categoryList = new ArrayList<>();
+
+    private ImageView btnBackIcon;
 
 
     @Nullable
@@ -62,7 +66,6 @@ public class AddTaskFragment extends Fragment {
         setupClickListeners();
         setupPriorityButtons();
 
-        // Set initial due date button text
         btnDueDate.setText("Select Due Date");
     }
 
@@ -80,10 +83,8 @@ public class AddTaskFragment extends Fragment {
         btnSave = view.findViewById(R.id.btn_save);
         btnCancel = view.findViewById(R.id.btn_cancel);
 
-        ImageView btnBackIcon = view.findViewById(R.id.ic_back);
-        btnBackIcon.setOnClickListener(v -> {
-            requireActivity().getSupportFragmentManager().popBackStack();
-        });
+        btnBackIcon = view.findViewById(R.id.ic_back);
+
     }
 
     private void setupViewModels() {
@@ -184,7 +185,19 @@ public class AddTaskFragment extends Fragment {
 
         // Cancel Button
         btnCancel.setOnClickListener(v -> {
-            requireActivity().getSupportFragmentManager().popBackStack();
+            if (hasUnsavedChanges()) {
+                showDiscardDialog();
+            } else {
+                requireActivity().getSupportFragmentManager().popBackStack();
+            }
+        });
+
+        btnBackIcon.setOnClickListener(v -> {
+            if (hasUnsavedChanges()) {
+                showDiscardDialog();
+            } else {
+                requireActivity().getSupportFragmentManager().popBackStack();
+            }
         });
     }
 
@@ -259,5 +272,23 @@ public class AddTaskFragment extends Fragment {
         taskViewModel.insertTask(task);
         Toast.makeText(requireContext(), "Task saved!", Toast.LENGTH_SHORT).show();
         requireActivity().getSupportFragmentManager().popBackStack();
+    }
+
+    private boolean hasUnsavedChanges() {
+        return !etTaskName.getText().toString().trim().isEmpty() ||
+                !etTaskDescription.getText().toString().trim().isEmpty() ||
+                !selectedDueDate.isEmpty() ||
+                spinnerCategory.getSelectedItemPosition() > 1;
+    }
+
+    private void showDiscardDialog() {
+        new AlertDialog.Builder(requireContext())
+                .setTitle("Discard Changes?")
+                .setMessage("You have unsaved changes. Are you sure you want to leave?")
+                .setPositiveButton("Discard", (dialog, which) -> {
+                    requireActivity().getSupportFragmentManager().popBackStack();
+                })
+                .setNegativeButton("Cancel", null)
+                .show();
     }
 }
