@@ -114,7 +114,7 @@ public class MainActivity extends AppCompatActivity {
             } else if (item.getItemId() == R.id.nav_completed) {
                 selectedFragment = new CompletedTasksFragment();
                 btnSearch.setVisibility(View.GONE);
-                btnMenu.setVisibility(View.GONE);
+                btnMenu.setVisibility(View.VISIBLE);
             }
 
             if (selectedFragment != null) {

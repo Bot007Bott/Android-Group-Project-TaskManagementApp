@@ -1,6 +1,7 @@
 package com.midtermproject.mytaskmanagementApp.ui.view.fragments;
 
 import android.content.Context;
+import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.text.Editable;
 import android.text.TextWatcher;
@@ -28,10 +29,10 @@ import com.midtermproject.mytaskmanagementApp.ui.viewmodel.CategoryViewModel;
 import com.midtermproject.mytaskmanagementApp.ui.viewmodel.TaskViewModel;
 import java.util.List;
 import android.widget.PopupMenu;
-import android.widget.EditText;
-import android.view.View;
+
 import java.util.ArrayList;
-import java.util.List;
+
+import androidx.recyclerview.widget.ItemTouchHelper;
 
 public class CategoryListFragment extends Fragment implements MainActivity.MenuCallback {
 
@@ -101,12 +102,26 @@ public class CategoryListFragment extends Fragment implements MainActivity.MenuC
         recyclerView.setLayoutManager(new LinearLayoutManager(getContext()));
         recyclerView.setAdapter(categoryAdapter);
 
-        // EDIT: When category item is clicked, show edit dialog
+        // Click to view tasks in category
         categoryAdapter.setOnItemClickListener(category -> {
+            // Navigate to TaskListFragment with category filter
+            Bundle args = new Bundle();
+            args.putInt("CATEGORY_ID", category.getCategoryId());
+            args.putString("CATEGORY_NAME", category.getCategoryName());
+
+            TaskListFragment fragment = new TaskListFragment();
+            fragment.setArguments(args);
+
+            requireActivity().getSupportFragmentManager().beginTransaction()
+                    .replace(R.id.fragment_container, fragment)
+                    .addToBackStack(null)
+                    .commit();
+        });
+
+        categoryAdapter.setOnEditClickListener(category -> {
             showEditCategoryDialog(category);
         });
 
-        // DELETE: When delete button is clicked
         categoryAdapter.setOnDeleteClickListener(category -> {
             showDeleteConfirmationDialog(category);
         });

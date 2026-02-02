@@ -82,4 +82,10 @@ public class TaskRepository {
             taskDao.deleteAllTasks();
         });
     }
+
+    public void deleteAllCompletedTasks() {
+        executorService.execute(() -> {
+            taskDao.deleteAllCompletedTasks();
+        });
+    }
 }

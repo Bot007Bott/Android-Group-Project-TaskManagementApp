@@ -60,6 +60,11 @@ public class TaskListFragment extends Fragment implements MainActivity.MenuCallb
 
     private static boolean dialogShownThisSession = false;
 
+    private int filterCategoryId = -1;
+    private String filterCategoryName = null;
+
+    private TextView tvCategoryEmpty;
+
     @Nullable
     @Override
     public View onCreateView(@NonNull LayoutInflater inflater,
@@ -71,6 +76,17 @@ public class TaskListFragment extends Fragment implements MainActivity.MenuCallb
     @Override
     public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
         super.onViewCreated(view, savedInstanceState);
+        if (getArguments() != null) {
+            filterCategoryId = getArguments().getInt("CATEGORY_ID", -1);
+            filterCategoryName = getArguments().getString("CATEGORY_NAME");
+
+            if (filterCategoryId != -1 && filterCategoryName != null) {
+                TextView tvHeader = view.findViewById(R.id.tv_header);
+                tvHeader.setText("Category : "+filterCategoryName);
+                tvHeader.setVisibility(View.VISIBLE);
+            }
+        }
+
         initViews(view);
         setupRecyclerView();
         taskViewModel = new ViewModelProvider(this).get(TaskViewModel.class);
@@ -95,10 +111,10 @@ public class TaskListFragment extends Fragment implements MainActivity.MenuCallb
         searchContainer = view.findViewById(R.id.search_container);
         etSearch = view.findViewById(R.id.et_search);
         btnClearSearch = view.findViewById(R.id.btn_clear_search);
+        tvCategoryEmpty = view.findViewById(R.id.tv_category_empty);
 
         setupButtonListeners();
         setupSearch();
-        Button btnTestNotification = view.findViewById(R.id.btn_test_notification);
     }
 
     private void setupSearch() {
@@ -236,10 +252,34 @@ public class TaskListFragment extends Fragment implements MainActivity.MenuCallb
                     .commit();
         });
 
-        btnAll.setOnClickListener(v -> applyFilter("ALL"));
-        btnToday.setOnClickListener(v -> applyFilter("TODAY"));
-        btnWeek.setOnClickListener(v -> applyFilter("WEEK"));
-        btnOverdue.setOnClickListener(v -> applyFilter("OVERDUE"));
+        btnAll.setOnClickListener(v -> {
+            hideFilterHeader();
+            applyFilter("ALL");
+        });
+
+        btnToday.setOnClickListener(v -> {
+            hideFilterHeader();
+            applyFilter("TODAY");
+        });
+
+        btnWeek.setOnClickListener(v -> {
+            hideFilterHeader();
+            applyFilter("WEEK");
+        });
+
+        btnOverdue.setOnClickListener(v -> {
+            hideFilterHeader();
+            applyFilter("OVERDUE");
+        });
+    }
+
+    private void hideFilterHeader() {
+        filterCategoryId = -1;
+        filterCategoryName = null;
+        TextView tvHeader = requireView().findViewById(R.id.tv_header);
+        if (tvHeader != null) {
+            tvHeader.setVisibility(View.GONE);
+        }
     }
 
     private void observeTasks() {
@@ -251,16 +291,37 @@ public class TaskListFragment extends Fragment implements MainActivity.MenuCallb
 
                 checkAndShowDueTaskNotifications(tasks);
 
-                // Show/hide empty state
                 if (tasks.isEmpty()) {
+                    tvEmptyState.setText("No tasks yet\n\nCreate your first task");
                     showEmptyState();
                 } else {
-                    showTaskList();
+                    boolean allCompleted = true;
+                    for (Task task : tasks) {
+                        if (!task.isTaskCompleted()) {
+                            allCompleted = false;
+                            break;
+                        }
+                    }
+
+                    if (allCompleted) {
+                        tvEmptyState.setText("All tasks completed!\n\nGreat job!");
+                        showEmptyState();
+                    } else {
+                        showTaskList();
+                    }
                 }
+
             }
         });
     }
 
+    private void clearAllFilterButtons() {
+        Button[] buttons = {btnAll, btnToday, btnWeek, btnOverdue};
+        for (Button btn : buttons) {
+            btn.setActivated(false);
+            btn.setTextColor(getResources().getColor(R.color.purple_500));
+        }
+    }
     private void applyFilter(String filter) {
         currentFilter = filter;
         updateFilterButtons(filter);
@@ -271,12 +332,24 @@ public class TaskListFragment extends Fragment implements MainActivity.MenuCallb
             return;
         }
 
-        List<com.midtermproject.mytaskmanagementApp.data.model.Task> filteredTasks = new ArrayList<>();
+        List<Task> filteredTasks = new ArrayList<>();
+
+        // FIRST: Filter by category if set
+        List<Task> tasksToFilter = allTasks;
+        if (filterCategoryId != -1) {
+            tasksToFilter = new ArrayList<>();
+            for (Task task : allTasks) {
+                if (task.getCategoryId() == filterCategoryId) {
+                    tasksToFilter.add(task);
+                }
+            }
+        }
+
         String today = DateTimeUtil.getCurrentDate();
 
         switch (filter) {
             case "ALL":
-                for (Task task : allTasks) {
+                for (Task task : tasksToFilter) {  // Changed from allTasks
                     if (!task.isTaskCompleted()) {
                         filteredTasks.add(task);
                     }
@@ -284,7 +357,7 @@ public class TaskListFragment extends Fragment implements MainActivity.MenuCallb
                 break;
 
             case "TODAY":
-                for (com.midtermproject.mytaskmanagementApp.data.model.Task task : allTasks) {
+                for (Task task : tasksToFilter) {  // Changed from allTasks
                     if (DateTimeUtil.isToday(task.getDueDate()) && !task.isTaskCompleted()) {
                         filteredTasks.add(task);
                     }
@@ -292,15 +365,15 @@ public class TaskListFragment extends Fragment implements MainActivity.MenuCallb
                 break;
 
             case "WEEK":
-                for (com.midtermproject.mytaskmanagementApp.data.model.Task task : allTasks) {
+                for (Task task : tasksToFilter) {  // Changed from allTasks
                     if (isDueThisWeek(task.getDueDate()) && !task.isTaskCompleted()) {
                         filteredTasks.add(task);
                     }
                 }
                 break;
 
-            case "OVERDUE": // Show overdue
-                for (com.midtermproject.mytaskmanagementApp.data.model.Task task : allTasks) {
+            case "OVERDUE":
+                for (Task task : tasksToFilter) {  // Changed from allTasks
                     if ((DateTimeUtil.isOverdue(task.getDueDate()) && !task.isTaskCompleted())) {
                         filteredTasks.add(task);
                     }
@@ -312,11 +385,38 @@ public class TaskListFragment extends Fragment implements MainActivity.MenuCallb
 
         // Update empty state text based on filter
         if (filteredTasks.isEmpty()) {
-            String emptyText = getEmptyStateText(filter);
-            tvEmptyState.setText(emptyText);
-            showEmptyState();
+            if (filterCategoryId != -1) {
+                int totalInCategory = 0;
+                int completedInCategory = 0;
+
+                for (Task task : allTasks) {
+                    if (task.getCategoryId() == filterCategoryId) {
+                        totalInCategory++;
+                        if (task.isTaskCompleted()) {
+                            completedInCategory++;
+                        }
+                    }
+                }
+
+                if (totalInCategory == 0) {
+                    tvCategoryEmpty.setText("No tasks in this category\n\nCreate your first task");
+                } else if (completedInCategory == totalInCategory) {
+                    tvCategoryEmpty.setText("All tasks completed!\n\nGreat job!");
+                } else {
+                    tvCategoryEmpty.setText("No tasks match this filter");
+                }
+                tvCategoryEmpty.setVisibility(View.VISIBLE);
+                tvEmptyState.setVisibility(View.GONE);
+            } else {
+                tvEmptyState.setText(getEmptyStateText(filter));
+                tvEmptyState.setVisibility(View.VISIBLE);
+                tvCategoryEmpty.setVisibility(View.GONE);
+            }
+            recyclerView.setVisibility(View.GONE);
         } else {
-            showTaskList();
+            recyclerView.setVisibility(View.VISIBLE);
+            tvEmptyState.setVisibility(View.GONE);
+            tvCategoryEmpty.setVisibility(View.GONE);
         }
     }
 
@@ -342,22 +442,6 @@ public class TaskListFragment extends Fragment implements MainActivity.MenuCallb
         }
     }
 
-    private List<com.midtermproject.mytaskmanagementApp.data.model.Task> filterBySearch(
-            List<com.midtermproject.mytaskmanagementApp.data.model.Task> tasks, String query) {
-        List<com.midtermproject.mytaskmanagementApp.data.model.Task> result = new ArrayList<>();
-        String lowerQuery = query.toLowerCase();
-
-        for (com.midtermproject.mytaskmanagementApp.data.model.Task task : tasks) {
-            if (task.getTaskName().toLowerCase().contains(lowerQuery) ||
-                    (task.getTaskDescription() != null &&
-                            task.getTaskDescription().toLowerCase().contains(lowerQuery))) {
-                result.add(task);
-            }
-        }
-
-        return result;
-    }
-
     private String getEmptyStateText(String filter) {
         switch (filter) {
             case "TODAY":
@@ -372,6 +456,11 @@ public class TaskListFragment extends Fragment implements MainActivity.MenuCallb
     }
 
     private void updateFilterButtons(String activeFilter) {
+        if (filterCategoryId != -1) {
+            clearAllFilterButtons();
+            return;
+        }
+
         // Reset all buttons
         Button[] buttons = {btnAll, btnToday, btnWeek, btnOverdue};
         for (Button btn : buttons) {

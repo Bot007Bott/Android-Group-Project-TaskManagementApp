@@ -49,4 +49,7 @@ public interface TaskDao {
 
     @Query("UPDATE tasks SET is_completed = :isCompleted WHERE task_id = :taskId")
     void updateTaskCompletion(int taskId, int isCompleted);
+
+    @Query("DELETE FROM tasks WHERE is_completed = 1")
+    void deleteAllCompletedTasks();
 }

@@ -199,6 +199,27 @@
 
             </LinearLayout>
 
+            <TextView
+                android:id="@+id/tv_header"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="15dp"
+                android:text="Task"
+                android:textAlignment="center"
+                android:textSize="24sp"
+                android:textStyle="bold"
+                android:visibility="gone"/>
+
+            <TextView
+                android:id="@+id/tv_category_empty"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:gravity="center"
+                android:padding="32dp"
+                android:textSize="16sp"
+                android:textAlignment="center"
+                android:visibility="gone"/>
+
             <!-- Task List or Empty State -->
             <androidx.recyclerview.widget.RecyclerView
                 android:id="@+id/recycler_view_tasks"
@@ -218,15 +239,6 @@
 
         </LinearLayout>
     </ScrollView>
-
-    <Button
-        android:id="@+id/btn_test_notification"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_gravity="center_horizontal"
-        android:layout_margin="16dp"
-        android:text="Test Notification"
-        android:visibility="gone" />
 
     <!-- FAB Button -->
     <com.google.android.material.floatingactionbutton.FloatingActionButton

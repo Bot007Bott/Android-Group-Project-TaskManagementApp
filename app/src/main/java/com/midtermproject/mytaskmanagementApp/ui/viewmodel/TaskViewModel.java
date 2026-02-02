@@ -162,5 +162,12 @@ public class TaskViewModel extends AndroidViewModel {
         }
         return null;
     }
-
+    /**
+     * Delete all completed tasks permanently
+     * Only affects tasks marked as completed (taskCompleted = true)
+     * Pending tasks are not affected
+     */
+    public void deleteAllCompletedTasks() {
+        taskRepository.deleteAllCompletedTasks();
+    }
 }

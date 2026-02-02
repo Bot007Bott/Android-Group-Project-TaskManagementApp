@@ -18,8 +18,10 @@ import com.google.android.material.bottomnavigation.BottomNavigationView;
 import com.midtermproject.mytaskmanagementApp.R;
 import com.midtermproject.mytaskmanagementApp.ui.adapter.TaskAdapter;
 import com.midtermproject.mytaskmanagementApp.ui.viewmodel.TaskViewModel;
+import android.widget.PopupMenu;
+import com.midtermproject.mytaskmanagementApp.ui.view.activities.MainActivity;
 
-public class CompletedTasksFragment extends Fragment {
+public class CompletedTasksFragment extends Fragment implements MainActivity.MenuCallback {
 
     private TaskViewModel taskViewModel;
     private TaskAdapter taskAdapter;
@@ -94,4 +96,29 @@ public class CompletedTasksFragment extends Fragment {
         recyclerView.setVisibility(View.GONE);
         tvEmptyState.setVisibility(View.VISIBLE);
     }
+
+    @Override
+    public void showMenu(View anchorView) {
+        PopupMenu popup = new PopupMenu(requireContext(), anchorView);
+        popup.getMenu().add("Clear All Completed Tasks");
+
+        popup.setOnMenuItemClickListener(item -> {
+            showClearAllDialog();
+            return true;
+        });
+        popup.show();
+    }
+
+    private void showClearAllDialog() {
+        new androidx.appcompat.app.AlertDialog.Builder(requireContext())
+                .setTitle("Clear All Completed Tasks?")
+                .setMessage("This will permanently delete all completed tasks.")
+                .setPositiveButton("Clear", (dialog, which) -> {
+                    taskViewModel.deleteAllCompletedTasks();
+                    Toast.makeText(requireContext(), "All completed tasks cleared", Toast.LENGTH_SHORT).show();
+                })
+                .setNegativeButton("Cancel", null)
+                .show();
+    }
+
 }
