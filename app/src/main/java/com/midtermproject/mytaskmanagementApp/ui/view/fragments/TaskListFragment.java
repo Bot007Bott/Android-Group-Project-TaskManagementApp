@@ -220,11 +220,6 @@ public class TaskListFragment extends Fragment implements MainActivity.MenuCallb
 
         taskAdapter.setOnTaskCompletionListener((task, isCompleted) -> {
             taskViewModel.updateTaskCompletion(task.getTaskId(), isCompleted);
-            if (isCompleted) {
-                Toast.makeText(getContext(), "Task completed!", Toast.LENGTH_SHORT).show();
-                BottomNavigationView bottomNav = requireActivity().findViewById(R.id.bottom_navigation);
-                bottomNav.setSelectedItemId(R.id.nav_completed);
-            }
         });
     }
 
@@ -277,20 +272,7 @@ public class TaskListFragment extends Fragment implements MainActivity.MenuCallb
                     tvEmptyState.setText("No tasks yet\n\nCreate your first task");
                     showEmptyState();
                 } else {
-                    boolean allCompleted = true;
-                    for (Task task : tasks) {
-                        if (!task.isTaskCompleted()) {
-                            allCompleted = false;
-                            break;
-                        }
-                    }
-
-                    if (allCompleted) {
-                        tvEmptyState.setText("All tasks completed!\n\nGreat job!");
-                        showEmptyState();
-                    } else {
-                        showTaskList();
-                    }
+                    showTaskList();
                 }
 
             }
@@ -329,11 +311,7 @@ public class TaskListFragment extends Fragment implements MainActivity.MenuCallb
 
         switch (filter) {
             case "ALL":
-                for (Task task : tasksToFilter) {
-                    if (!task.isTaskCompleted()) {
-                        filteredTasks.add(task);
-                    }
-                }
+                filteredTasks.addAll(tasksToFilter);
                 break;
 
             case "TODAY":
@@ -569,6 +547,9 @@ public class TaskListFragment extends Fragment implements MainActivity.MenuCallb
 
     private void sortTasks(String type) {
         List<Task> sorted = new ArrayList<>(taskAdapter.getTasks());
+        if (sorted.isEmpty()) {
+            return;
+        }
         if (type.equals("DATE")) {
             sorted.sort((a, b) -> a.getDueDate().compareTo(b.getDueDate()));
         } else if (type.equals("PRIORITY")) {

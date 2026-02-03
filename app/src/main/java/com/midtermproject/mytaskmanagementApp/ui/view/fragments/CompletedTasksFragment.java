@@ -77,11 +77,6 @@ public class CompletedTasksFragment extends Fragment implements MainActivity.Men
 
         taskAdapter.setOnTaskCompletionListener((task, isCompleted) -> {
             taskViewModel.updateTaskCompletion(task.getTaskId(), isCompleted);
-            if (!isCompleted) {
-                Toast.makeText(getContext(), "Task moved back to pending", Toast.LENGTH_SHORT).show();
-                BottomNavigationView bottomNav = requireActivity().findViewById(R.id.bottom_navigation);
-                bottomNav.setSelectedItemId(R.id.nav_home);
-            }
         });
     }
 
