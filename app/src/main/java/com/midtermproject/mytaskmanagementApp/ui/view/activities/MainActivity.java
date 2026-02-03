@@ -28,18 +28,8 @@ public class MainActivity extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
-
-        // In MainActivity.onCreate(), before creating channel:
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            NotificationManager manager = getSystemService(NotificationManager.class);
-            if (manager != null) {
-                manager.deleteNotificationChannel("task_reminders");
-            }
-        }
         NotificationHelper.createNotificationChannel(this);
-
         requestNotificationPermission();
-
         setupBottomNavigation();
 
         findViewById(R.id.btn_search).setOnClickListener(v -> {
@@ -65,12 +55,10 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void requestNotificationPermission() {
-        // For Android 13+ (API 33+), we need to request notification permission
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
             if (ContextCompat.checkSelfPermission(this,
                     Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED) {
 
-                // Request the permission
                 ActivityCompat.requestPermissions(this,
                         new String[]{Manifest.permission.POST_NOTIFICATIONS},
                         NOTIFICATION_PERMISSION_REQUEST_CODE);
@@ -85,10 +73,8 @@ public class MainActivity extends AppCompatActivity {
 
         if (requestCode == NOTIFICATION_PERMISSION_REQUEST_CODE) {
             if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
-                // Permission granted
                 Toast.makeText(this, "Notification permission granted", Toast.LENGTH_SHORT).show();
             } else {
-                // Permission denied
                 Toast.makeText(this, "Notification permission denied", Toast.LENGTH_SHORT).show();
             }
         }

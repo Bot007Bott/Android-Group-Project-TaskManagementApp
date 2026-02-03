@@ -22,9 +22,6 @@ public class CategoryViewModel extends AndroidViewModel {
         categoryRepository = new CategoryRepository(application);
         allCategories = categoryRepository.getAllCategories();
     }
-
-    // ========== CRUD OPERATIONS ==========
-
     /**
      * Insert a new category
      * @param category The category to insert
@@ -56,8 +53,6 @@ public class CategoryViewModel extends AndroidViewModel {
         categoryRepository.deleteAllCategories();
     }
 
-    // ========== GET OPERATIONS ==========
-
     /**
      * Get all categories
      * @return LiveData list of all categories
@@ -83,8 +78,6 @@ public class CategoryViewModel extends AndroidViewModel {
     public LiveData<List<Category>> searchCategories(String name) {
         return categoryRepository.searchCategories(name);
     }
-
-    // ========== HELPER METHODS ==========
 
     /**
      * Get category name by ID (helper for UI)

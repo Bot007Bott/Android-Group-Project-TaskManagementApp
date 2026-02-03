@@ -21,12 +21,10 @@ public class TaskAdapter extends RecyclerView.Adapter<TaskAdapter.TaskViewHolder
     private OnItemClickListener listener;
     private OnTaskCompletionListener completionListener;
 
-    // Click listener interface
     public interface OnItemClickListener {
         void onItemClick(Task task);
     }
 
-    // Completion listener interface
     public interface OnTaskCompletionListener {
         void onTaskCompleted(Task task, boolean isCompleted);
     }
@@ -82,7 +80,6 @@ public class TaskAdapter extends RecyclerView.Adapter<TaskAdapter.TaskViewHolder
             tvPriority = itemView.findViewById(R.id.tv_priority);
             cbCompleted = itemView.findViewById(R.id.cb_completed);
 
-            // Click listener for entire task item
             itemView.setOnClickListener(v -> {
                 int position = getAdapterPosition();
                 if (position != RecyclerView.NO_POSITION && listener != null) {
@@ -90,7 +87,6 @@ public class TaskAdapter extends RecyclerView.Adapter<TaskAdapter.TaskViewHolder
                 }
             });
 
-            // Checkbox listener
             cbCompleted.setOnCheckedChangeListener((buttonView, isChecked) -> {
                 int position = getAdapterPosition();
                 if (position != RecyclerView.NO_POSITION) {
@@ -106,7 +102,6 @@ public class TaskAdapter extends RecyclerView.Adapter<TaskAdapter.TaskViewHolder
         }
 
         void bind(Task task) {
-            // Remove listener temporarily to avoid triggering while setting
             cbCompleted.setOnCheckedChangeListener(null);
 
             tvTaskName.setText(task.getTaskName());
@@ -114,7 +109,6 @@ public class TaskAdapter extends RecyclerView.Adapter<TaskAdapter.TaskViewHolder
             tvPriority.setText(task.getPriority());
             cbCompleted.setChecked(task.isTaskCompleted());
 
-            // Restore listener
             cbCompleted.setOnCheckedChangeListener((buttonView, isChecked) -> {
                 int position = getAdapterPosition();
                 if (position != RecyclerView.NO_POSITION) {
@@ -127,7 +121,6 @@ public class TaskAdapter extends RecyclerView.Adapter<TaskAdapter.TaskViewHolder
                 }
             });
 
-            // Set priority color
             if (task.getPriority().equals(Constants.PRIORITY_HIGH)) {
                 tvPriority.setBackgroundColor(Color.RED);
                 tvPriority.setTextColor(Color.WHITE);
@@ -139,7 +132,6 @@ public class TaskAdapter extends RecyclerView.Adapter<TaskAdapter.TaskViewHolder
                 tvPriority.setTextColor(Color.BLACK);
             }
 
-            // Strike-through text if completed
             if (task.isTaskCompleted()) {
                 tvTaskName.setPaintFlags(tvTaskName.getPaintFlags() | android.graphics.Paint.STRIKE_THRU_TEXT_FLAG);
                 tvDueDate.setPaintFlags(tvDueDate.getPaintFlags() | android.graphics.Paint.STRIKE_THRU_TEXT_FLAG);

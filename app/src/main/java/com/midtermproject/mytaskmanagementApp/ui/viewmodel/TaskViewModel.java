@@ -21,7 +21,6 @@ public class TaskViewModel extends AndroidViewModel {
     private final LiveData<List<Task>> pendingTasks;
     private final LiveData<List<Task>> completedTasks;
 
-    // For search results
     private final MutableLiveData<List<Task>> searchResults = new MutableLiveData<>();
 
     public TaskViewModel(@NonNull Application application) {
@@ -32,8 +31,6 @@ public class TaskViewModel extends AndroidViewModel {
         completedTasks = taskRepository.getCompletedTasks();
     }
 
-    // ========== INSERT OPERATIONS ==========
-
     /**
      * Insert a new task
      * @param task The task to insert
@@ -41,8 +38,6 @@ public class TaskViewModel extends AndroidViewModel {
     public void insertTask(Task task) {
         taskRepository.insert(task);
     }
-
-    // ========== UPDATE OPERATIONS ==========
 
     /**
      * Update an existing task
@@ -61,8 +56,6 @@ public class TaskViewModel extends AndroidViewModel {
         taskRepository.updateTaskCompletion(taskId, isCompleted);
     }
 
-    // ========== DELETE OPERATIONS ==========
-
     /**
      * Delete a task
      * @param task The task to delete
@@ -77,8 +70,6 @@ public class TaskViewModel extends AndroidViewModel {
     public void deleteAllTasks() {
         taskRepository.deleteAllTasks();
     }
-
-    // ========== GET OPERATIONS (LiveData) ==========
 
     /**
      * Get all tasks ordered by due date
@@ -109,9 +100,6 @@ public class TaskViewModel extends AndroidViewModel {
      * Get completed tasks
      * @return LiveData list of completed tasks
      */
-//    public LiveData<List<Task>> getCompletedTasks() {
-//        return completedTasks;
-//    }
     public LiveData<List<Task>> getCompletedTasks() {
         return taskRepository.getCompletedTasks();
     }
@@ -134,8 +122,6 @@ public class TaskViewModel extends AndroidViewModel {
         return taskRepository.getTasksForToday(date);
     }
 
-    // ========== SEARCH OPERATIONS ==========
-
     /**
      * Search tasks by name
      * @param query Search query string
@@ -144,8 +130,6 @@ public class TaskViewModel extends AndroidViewModel {
     public LiveData<List<Task>> searchTasks(String query) {
         return taskRepository.searchTasks(query);
     }
-
-    // ========== HELPER METHODS ==========
 
     /**
      * Get task by ID (from all tasks list)

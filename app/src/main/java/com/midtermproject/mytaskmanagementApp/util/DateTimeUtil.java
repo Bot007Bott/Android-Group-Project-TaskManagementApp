@@ -14,8 +14,6 @@ import java.util.concurrent.TimeUnit;
  * Provides formatting, parsing, and date calculation methods.
  */
 public class DateTimeUtil {
-
-    // ========== FORMATTER INSTANCES ==========
     @SuppressLint("ConstantLocale")
     private static final SimpleDateFormat DB_DATE_FORMAT =
             new SimpleDateFormat(Constants.DATE_FORMAT_DB, Locale.getDefault());
@@ -27,9 +25,6 @@ public class DateTimeUtil {
     @SuppressLint("ConstantLocale")
     private static final SimpleDateFormat FULL_DATE_FORMAT =
             new SimpleDateFormat(Constants.DATE_FORMAT_FULL, Locale.getDefault());
-
-    // ========== CURRENT DATE/TIME METHODS ==========
-
     /**
      * Get current date in database format (yyyy-MM-dd)
      * @return Current date as string
@@ -54,9 +49,6 @@ public class DateTimeUtil {
     public static long getCurrentTimestamp() {
         return System.currentTimeMillis();
     }
-
-    // ========== FORMATTING METHODS ==========
-
     /**
      * Format date from database format to display format
      * @param dateString Date in "yyyy-MM-dd" format
@@ -70,7 +62,6 @@ public class DateTimeUtil {
             return dateString; // Return original if parsing fails
         }
     }
-
     /**
      * Format date to full display format
      * @param dateString Date in "yyyy-MM-dd" format

@@ -60,4 +60,8 @@ public class CategoryRepository {
             categoryDao.deleteAllCategories();
         });
     }
+
+    public void shutdown() {
+        executorService.shutdown();
+    }
 }

@@ -46,8 +46,6 @@ public class CompletedTasksFragment extends Fragment implements MainActivity.Men
         setupRecyclerView();
 
         taskViewModel = new ViewModelProvider(requireActivity()).get(TaskViewModel.class);
-
-        // IMPORTANT: Observe ONLY COMPLETED tasks
         taskViewModel.getCompletedTasks().observe(getViewLifecycleOwner(), tasks -> {
             if (tasks != null && !tasks.isEmpty()) {
                 taskAdapter.setTasks(tasks);

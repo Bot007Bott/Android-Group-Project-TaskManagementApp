@@ -86,15 +86,13 @@ public class TaskDetailFragment extends Fragment {
             goBack();
             return;
         }
-
-        // Get task from ViewModel
         taskViewModel.getAllTasks().observe(getViewLifecycleOwner(), tasks -> {
             if (tasks != null) {
                 for (Task task : tasks) {
                     if (task.getTaskId() == taskId) {
                         currentTask = task;
                         displayTaskDetails(task);
-                        loadCategoryName(task.getCategoryId());  // NEW: Load category name
+                        loadCategoryName(task.getCategoryId());
                         break;
                     }
                 }
@@ -102,7 +100,6 @@ public class TaskDetailFragment extends Fragment {
         });
     }
 
-    // NEW METHOD: Get category name by ID
     private void loadCategoryName(int categoryId) {
         categoryViewModel.getAllCategories().observe(getViewLifecycleOwner(), categories -> {
             if (categories != null) {
@@ -125,11 +122,7 @@ public class TaskDetailFragment extends Fragment {
         tvPriority.setText(task.getPriority());
         tvCreatedDate.setText("Created: " + DateTimeUtil.formatDateForDisplay(task.getCreatedDate()));
         cbCompleted.setChecked(task.isTaskCompleted());
-
-        // Category will be set later by loadCategoryName()
         tvCategory.setText("Loading category...");
-
-        // Set priority color
         if (task.getPriority().equals(Constants.PRIORITY_HIGH)) {
             tvPriority.setBackgroundColor(getResources().getColor(android.R.color.holo_red_light));
         } else if (task.getPriority().equals(Constants.PRIORITY_MEDIUM)) {
@@ -140,7 +133,6 @@ public class TaskDetailFragment extends Fragment {
     }
 
     private void setupClickListeners() {
-        // Complete checkbox
         cbCompleted.setOnCheckedChangeListener((buttonView, isChecked) -> {
             if (currentTask != null) {
                 taskViewModel.updateTaskCompletion(currentTask.getTaskId(), isChecked);
@@ -150,30 +142,23 @@ public class TaskDetailFragment extends Fragment {
             }
         });
 
-        // Edit button
         btnEdit.setOnClickListener(v -> {
             if (currentTask != null) {
                 Bundle args = new Bundle();
                 args.putInt(Constants.EXTRA_TASK_ID, currentTask.getTaskId());
-
                 EditTaskFragment fragment = new EditTaskFragment();
                 fragment.setArguments(args);
-
                 requireActivity().getSupportFragmentManager().beginTransaction()
                         .replace(R.id.fragment_container, fragment)
                         .addToBackStack(null)
                         .commit();
             }
         });
-
-        // Delete button
         btnDelete.setOnClickListener(v -> {
             if (currentTask != null) {
                 showDeleteConfirmDialog();
             }
         });
-
-        // Back button
         btnBack.setOnClickListener(v -> goBack());
         btn_arrow_back.setOnClickListener(v->goBack());
     }
@@ -191,7 +176,6 @@ public class TaskDetailFragment extends Fragment {
                 .show();
     }
     private void goBack() {
-        // Show buttons again
         View btnSearch = requireActivity().findViewById(R.id.btn_search);
         View btnMenu = requireActivity().findViewById(R.id.btn_menu);
         if (btnSearch != null) btnSearch.setVisibility(View.VISIBLE);

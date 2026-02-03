@@ -11,7 +11,6 @@ import android.widget.Button;
 import android.widget.EditText;
 import android.widget.LinearLayout;
 import android.widget.PopupMenu;
-import android.widget.EditText;
 import androidx.appcompat.app.AlertDialog;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -118,7 +117,6 @@ public class TaskListFragment extends Fragment implements MainActivity.MenuCallb
     }
 
     private void setupSearch() {
-        // Live search as you type
         etSearch.addTextChangedListener(new TextWatcher() {
             @Override
             public void beforeTextChanged(CharSequence s, int start, int count, int after) {}
@@ -133,7 +131,6 @@ public class TaskListFragment extends Fragment implements MainActivity.MenuCallb
             public void afterTextChanged(Editable s) {}
         });
 
-        // Clear button - clears search and hides search bar
         btnClearSearch.setOnClickListener(v -> {
             hideSearchBar();
         });
@@ -141,10 +138,8 @@ public class TaskListFragment extends Fragment implements MainActivity.MenuCallb
 
     private void filterTasks(String query) {
         if (query.isEmpty()) {
-            // Show original filtered list
             applyFilter(currentFilter);
         } else {
-            // Filter tasks based on search query
             List<Task> filtered = new ArrayList<>();
             for (Task task : allTasks) {
                 if (task.getTaskName().toLowerCase().contains(query.toLowerCase()) ||
@@ -166,19 +161,10 @@ public class TaskListFragment extends Fragment implements MainActivity.MenuCallb
     }
 
     private void hideSearchBar() {
-        // Clear search text
         etSearch.setText("");
-
-        // Hide search bar
         searchContainer.setVisibility(View.GONE);
-
-        // Hide keyboard
         hideKeyboard();
-
-        // Clear focus
         etSearch.clearFocus();
-
-        // Show original filtered list
         applyFilter(currentFilter);
     }
 
@@ -215,7 +201,6 @@ public class TaskListFragment extends Fragment implements MainActivity.MenuCallb
         recyclerView.setAdapter(taskAdapter);
 
         taskAdapter.setOnItemClickListener(task -> {
-            // Hide buttons
             View btnSearch = requireActivity().findViewById(R.id.btn_search);
             View btnMenu = requireActivity().findViewById(R.id.btn_menu);
             if (btnSearch != null) btnSearch.setVisibility(View.GONE);
@@ -237,7 +222,6 @@ public class TaskListFragment extends Fragment implements MainActivity.MenuCallb
             taskViewModel.updateTaskCompletion(task.getTaskId(), isCompleted);
             if (isCompleted) {
                 Toast.makeText(getContext(), "Task completed!", Toast.LENGTH_SHORT).show();
-                // Navigate to Completed tab
                 BottomNavigationView bottomNav = requireActivity().findViewById(R.id.bottom_navigation);
                 bottomNav.setSelectedItemId(R.id.nav_completed);
             }
@@ -286,11 +270,9 @@ public class TaskListFragment extends Fragment implements MainActivity.MenuCallb
         taskViewModel.getAllTasks().observe(getViewLifecycleOwner(), tasks -> {
             if (tasks != null) {
                 allTasks = tasks;
-                applyFilter(currentFilter); // Apply current filter when data changes
+                applyFilter(currentFilter);
                 updateStats(tasks);
-
                 checkAndShowDueTaskNotifications(tasks);
-
                 if (tasks.isEmpty()) {
                     tvEmptyState.setText("No tasks yet\n\nCreate your first task");
                     showEmptyState();
@@ -333,8 +315,6 @@ public class TaskListFragment extends Fragment implements MainActivity.MenuCallb
         }
 
         List<Task> filteredTasks = new ArrayList<>();
-
-        // FIRST: Filter by category if set
         List<Task> tasksToFilter = allTasks;
         if (filterCategoryId != -1) {
             tasksToFilter = new ArrayList<>();
@@ -349,7 +329,7 @@ public class TaskListFragment extends Fragment implements MainActivity.MenuCallb
 
         switch (filter) {
             case "ALL":
-                for (Task task : tasksToFilter) {  // Changed from allTasks
+                for (Task task : tasksToFilter) {
                     if (!task.isTaskCompleted()) {
                         filteredTasks.add(task);
                     }
@@ -357,7 +337,7 @@ public class TaskListFragment extends Fragment implements MainActivity.MenuCallb
                 break;
 
             case "TODAY":
-                for (Task task : tasksToFilter) {  // Changed from allTasks
+                for (Task task : tasksToFilter) {
                     if (DateTimeUtil.isToday(task.getDueDate()) && !task.isTaskCompleted()) {
                         filteredTasks.add(task);
                     }
@@ -365,7 +345,7 @@ public class TaskListFragment extends Fragment implements MainActivity.MenuCallb
                 break;
 
             case "WEEK":
-                for (Task task : tasksToFilter) {  // Changed from allTasks
+                for (Task task : tasksToFilter) {
                     if (isDueThisWeek(task.getDueDate()) && !task.isTaskCompleted()) {
                         filteredTasks.add(task);
                     }
@@ -373,17 +353,14 @@ public class TaskListFragment extends Fragment implements MainActivity.MenuCallb
                 break;
 
             case "OVERDUE":
-                for (Task task : tasksToFilter) {  // Changed from allTasks
+                for (Task task : tasksToFilter) {
                     if ((DateTimeUtil.isOverdue(task.getDueDate()) && !task.isTaskCompleted())) {
                         filteredTasks.add(task);
                     }
                 }
                 break;
         }
-
         taskAdapter.setTasks(filteredTasks);
-
-        // Update empty state text based on filter
         if (filteredTasks.isEmpty()) {
             if (filterCategoryId != -1) {
                 int totalInCategory = 0;
@@ -422,19 +399,12 @@ public class TaskListFragment extends Fragment implements MainActivity.MenuCallb
 
     private boolean isDueThisWeek(String dueDate) {
         try {
-            // Get today's date
             String today = DateTimeUtil.getCurrentDate();
-
-            // Get date 7 days from now
             String weekLater = DateTimeUtil.getDateDaysFromNow(7);
-
-            // Check if dueDate is between today and weekLater
             java.text.SimpleDateFormat sdf = new java.text.SimpleDateFormat("yyyy-MM-dd", java.util.Locale.getDefault());
             java.util.Date taskDate = sdf.parse(dueDate);
             java.util.Date todayDate = sdf.parse(today);
             java.util.Date weekLaterDate = sdf.parse(weekLater);
-
-            // Task is due this week if: today <= dueDate <= weekLater
             return (taskDate.equals(todayDate) || taskDate.after(todayDate)) &&
                     (taskDate.before(weekLaterDate) || taskDate.equals(weekLaterDate));
         } catch (Exception e) {
@@ -460,14 +430,11 @@ public class TaskListFragment extends Fragment implements MainActivity.MenuCallb
             clearAllFilterButtons();
             return;
         }
-
-        // Reset all buttons
         Button[] buttons = {btnAll, btnToday, btnWeek, btnOverdue};
         for (Button btn : buttons) {
             btn.setActivated(false);
             btn.setTextColor(getResources().getColor(R.color.purple_500));
         }
-
         Button activeButton;
         switch (activeFilter) {
             case "TODAY":
@@ -524,7 +491,6 @@ public class TaskListFragment extends Fragment implements MainActivity.MenuCallb
         }
 
         List<Task> dueTodayTasks = new ArrayList<>();
-
         for (Task task : tasks) {
             if (task.isTaskCompleted()) {
                 continue;
@@ -563,7 +529,6 @@ public class TaskListFragment extends Fragment implements MainActivity.MenuCallb
             }
         }
 
-        // SHOW DIALOG IF APP IS OPEN
         if (!dueTodayTasks.isEmpty() && isAdded() && !dialogShownThisSession) {
             showDueTasksDialog(dueTodayTasks);
             dialogShownThisSession = true;
@@ -581,7 +546,6 @@ public class TaskListFragment extends Fragment implements MainActivity.MenuCallb
                 .setMessage(message.toString())
                 .setPositiveButton("OK", null)
                 .setNegativeButton("View Tasks", (dialog, which) -> {
-                    // Switch to "Today" filter
                     applyFilter("TODAY");
                 })
                 .show();

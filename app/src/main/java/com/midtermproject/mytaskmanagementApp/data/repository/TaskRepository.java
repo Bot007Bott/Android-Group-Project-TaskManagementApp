@@ -88,4 +88,8 @@ public class TaskRepository {
             taskDao.deleteAllCompletedTasks();
         });
     }
+
+    public void shutdown() {
+        executorService.shutdown();
+    }
 }

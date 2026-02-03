@@ -75,9 +75,6 @@ public class NotificationHelper {
 
         // Show notification
         NotificationManagerCompat notificationManager = NotificationManagerCompat.from(context);
-
-        boolean hasPermission = notificationManager.areNotificationsEnabled();
-
         try {
             notificationManager.notify(taskId, builder.build());
         } catch (SecurityException e) {

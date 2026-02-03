@@ -102,9 +102,7 @@ public class CategoryListFragment extends Fragment implements MainActivity.MenuC
         recyclerView.setLayoutManager(new LinearLayoutManager(getContext()));
         recyclerView.setAdapter(categoryAdapter);
 
-        // Click to view tasks in category
         categoryAdapter.setOnItemClickListener(category -> {
-            // Navigate to TaskListFragment with category filter
             Bundle args = new Bundle();
             args.putInt("CATEGORY_ID", category.getCategoryId());
             args.putString("CATEGORY_NAME", category.getCategoryName());
@@ -128,56 +126,38 @@ public class CategoryListFragment extends Fragment implements MainActivity.MenuC
     }
 
     private void showEditCategoryDialog(Category category) {
-        // Create dialog
         androidx.appcompat.app.AlertDialog.Builder builder =
                 new androidx.appcompat.app.AlertDialog.Builder(requireContext());
-
         builder.setTitle("Edit Category");
-
-        // Inflate custom dialog layout
         View dialogView = LayoutInflater.from(requireContext())
                 .inflate(R.layout.dialog_edit_category, null);
-
         EditText etCategoryName = dialogView.findViewById(R.id.et_category_name);
         EditText etCategoryDescription = dialogView.findViewById(R.id.et_category_description);
-
-        // Set current values
         etCategoryName.setText(category.getCategoryName());
         if (category.getDescription() != null) {
             etCategoryDescription.setText(category.getDescription());
         }
-
         builder.setView(dialogView);
-
-        // Set up the buttons
         builder.setPositiveButton("Save", (dialog, which) -> {
             String newName = etCategoryName.getText().toString().trim();
             String newDescription = etCategoryDescription.getText().toString().trim();
-
-            // Validate
             if (newName.isEmpty()) {
                 Toast.makeText(requireContext(), "Category name cannot be empty",
                         Toast.LENGTH_SHORT).show();
                 return;
             }
-
-            // Update category
             category.setCategoryName(newName);
             category.setDescription(newDescription);
             categoryViewModel.updateCategory(category);
-
             Toast.makeText(requireContext(), "Category updated", Toast.LENGTH_SHORT).show();
         });
 
         builder.setNegativeButton("Cancel", (dialog, which) -> {
             dialog.dismiss();
         });
-
-        // Show dialog
         androidx.appcompat.app.AlertDialog dialog = builder.create();
         dialog.show();
 
-        // Make Enter key submit the dialog
         etCategoryName.setOnEditorActionListener((v, actionId, event) -> {
             if (actionId == android.view.inputmethod.EditorInfo.IME_ACTION_DONE) {
                 dialog.getButton(androidx.appcompat.app.AlertDialog.BUTTON_POSITIVE).performClick();

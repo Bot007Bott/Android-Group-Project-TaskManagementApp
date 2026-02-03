@@ -33,10 +33,8 @@ public class EditTaskFragment extends Fragment {
     private Spinner spinnerCategory;
     private Button btnDueDate, btnUpdate, btnDelete, btnCancel;
     private Button btnPriorityLow, btnPriorityMedium, btnPriorityHigh;
-
     private TaskViewModel taskViewModel;
     private CategoryViewModel categoryViewModel;
-
     private String selectedDueDate = "";
     private String selectedPriority = Constants.PRIORITY_MEDIUM;
     private List<Category> categoryList = new ArrayList<>();
@@ -70,7 +68,6 @@ public class EditTaskFragment extends Fragment {
         etTaskDescription = view.findViewById(R.id.et_task_description);
         spinnerCategory = view.findViewById(R.id.spinner_category);
 
-        // Priority buttons
         btnPriorityLow = view.findViewById(R.id.btn_priority_low);
         btnPriorityMedium = view.findViewById(R.id.btn_priority_medium);
         btnPriorityHigh = view.findViewById(R.id.btn_priority_high);
@@ -99,8 +96,6 @@ public class EditTaskFragment extends Fragment {
             goBack();
             return;
         }
-
-        // Find the task
         taskViewModel.getAllTasks().observe(getViewLifecycleOwner(), tasks -> {
             if (tasks != null) {
                 for (Task task : tasks) {
@@ -120,7 +115,6 @@ public class EditTaskFragment extends Fragment {
         selectedDueDate = task.getDueDate();
         btnDueDate.setText("Due: " + DateTimeUtil.formatDateForDisplay(selectedDueDate));
 
-        // Set priority
         selectedPriority = task.getPriority();
         if (selectedPriority.equals(Constants.PRIORITY_LOW)) {
             setActivePriorityButton(btnPriorityLow);
@@ -129,8 +123,6 @@ public class EditTaskFragment extends Fragment {
         } else {
             setActivePriorityButton(btnPriorityHigh);
         }
-
-        // Category will be set when spinner loads
     }
 
     private void setupCategorySpinner() {
@@ -151,7 +143,6 @@ public class EditTaskFragment extends Fragment {
                 adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
                 spinnerCategory.setAdapter(adapter);
 
-                // Select current task's category
                 if (currentTask != null) {
                     for (int i = 0; i < categoryList.size(); i++) {
                         if (categoryList.get(i).getCategoryId() == currentTask.getCategoryId()) {
@@ -182,7 +173,6 @@ public class EditTaskFragment extends Fragment {
     }
 
     private void setActivePriorityButton(Button activeButton) {
-        // Reset all
         btnPriorityLow.setBackgroundColor(getResources().getColor(android.R.color.transparent));
         btnPriorityMedium.setBackgroundColor(getResources().getColor(android.R.color.transparent));
         btnPriorityHigh.setBackgroundColor(getResources().getColor(android.R.color.transparent));
@@ -191,21 +181,14 @@ public class EditTaskFragment extends Fragment {
         btnPriorityMedium.setTextColor(getResources().getColor(android.R.color.black));
         btnPriorityHigh.setTextColor(getResources().getColor(android.R.color.black));
 
-        // Set active
         activeButton.setBackgroundColor(getResources().getColor(R.color.purple_500));
         activeButton.setTextColor(getResources().getColor(android.R.color.white));
     }
 
     private void setupClickListeners() {
-        // Due Date Picker
         btnDueDate.setOnClickListener(v -> showDatePicker());
-
-        // Update Button
         btnUpdate.setOnClickListener(v -> updateTask());
-
-        // Delete Button
         btnDelete.setOnClickListener(v -> showDeleteDialog());
-
         btnCancel.setOnClickListener(v -> {
             if (hasUnsavedChanges()) {
                 showDiscardDialog();
@@ -213,7 +196,6 @@ public class EditTaskFragment extends Fragment {
                 goBack();
             }
         });
-
         btnBack.setOnClickListener(v -> {
             if (hasUnsavedChanges()) {
                 showDiscardDialog();
@@ -246,28 +228,21 @@ public class EditTaskFragment extends Fragment {
     private void updateTask() {
         String taskName = etTaskName.getText().toString().trim();
         String description = etTaskDescription.getText().toString().trim();
-
-        // Validate
         if (taskName.isEmpty()) {
             etTaskName.setError("Task name is required");
             return;
         }
-
         if (selectedDueDate.isEmpty()) {
             Toast.makeText(requireContext(), "Please select a due date", Toast.LENGTH_SHORT).show();
             return;
         }
-
-        // Get category
         int selectedPosition = spinnerCategory.getSelectedItemPosition();
         if (selectedPosition < 0 || selectedPosition >= categoryList.size()) {
             Toast.makeText(requireContext(), "Please select a category", Toast.LENGTH_SHORT).show();
             return;
         }
-
         int categoryId = categoryList.get(selectedPosition).getCategoryId();
 
-        // Update task
         currentTask.setTaskName(taskName);
         currentTask.setTaskDescription(description);
         currentTask.setCategoryId(categoryId);
@@ -277,14 +252,6 @@ public class EditTaskFragment extends Fragment {
         taskViewModel.updateTask(currentTask);
         Toast.makeText(requireContext(), "Task updated!", Toast.LENGTH_SHORT).show();
         goBack();
-    }
-
-    private void deleteTask() {
-        if (currentTask != null) {
-            taskViewModel.deleteTask(currentTask);
-            Toast.makeText(requireContext(), "Task deleted", Toast.LENGTH_SHORT).show();
-            goBack();
-        }
     }
 
     private boolean hasUnsavedChanges() {

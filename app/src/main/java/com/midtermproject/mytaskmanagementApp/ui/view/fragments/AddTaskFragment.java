@@ -74,7 +74,6 @@ public class AddTaskFragment extends Fragment {
         etTaskDescription = view.findViewById(R.id.et_task_description);
         spinnerCategory = view.findViewById(R.id.spinner_category);
 
-        // Priority buttons
         btnPriorityLow = view.findViewById(R.id.btn_priority_low);
         btnPriorityMedium = view.findViewById(R.id.btn_priority_medium);
         btnPriorityHigh = view.findViewById(R.id.btn_priority_high);
@@ -84,7 +83,6 @@ public class AddTaskFragment extends Fragment {
         btnCancel = view.findViewById(R.id.btn_cancel);
 
         btnBackIcon = view.findViewById(R.id.ic_back);
-
     }
 
     private void setupViewModels() {
@@ -98,7 +96,6 @@ public class AddTaskFragment extends Fragment {
                 categoryList = categories;
                 List<String> categoryNames = new ArrayList<>();
 
-                // Always add these two first
                 categoryNames.add("Select Category");
                 categoryNames.add("+ Add New Category");
 
@@ -114,21 +111,16 @@ public class AddTaskFragment extends Fragment {
                 adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
                 spinnerCategory.setAdapter(adapter);
 
-                // ADD THIS CRITICAL PART: Set up spinner selection listener
                 spinnerCategory.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
                     @Override
                     public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
-                        if (position == 1) { // "+ Add New Category" selected
+                        if (position == 1) {
                             openAddCategoryFragment();
-                            // Reset spinner to "Select Category" after opening fragment
                             spinnerCategory.setSelection(0);
                         }
                     }
-
                     @Override
-                    public void onNothingSelected(AdapterView<?> parent) {
-                        // Do nothing
-                    }
+                    public void onNothingSelected(AdapterView<?> parent) {}
                 });
             }
         });
@@ -142,7 +134,6 @@ public class AddTaskFragment extends Fragment {
     }
 
     private void setupPriorityButtons() {
-        // Set initial active button
         setActivePriorityButton(btnPriorityMedium);
 
         btnPriorityLow.setOnClickListener(v -> {
@@ -162,7 +153,6 @@ public class AddTaskFragment extends Fragment {
     }
 
     private void setActivePriorityButton(Button activeButton) {
-        // Reset ALL buttons first
         btnPriorityLow.setBackgroundColor(getResources().getColor(android.R.color.transparent));
         btnPriorityMedium.setBackgroundColor(getResources().getColor(android.R.color.transparent));
         btnPriorityHigh.setBackgroundColor(getResources().getColor(android.R.color.transparent));
@@ -171,19 +161,13 @@ public class AddTaskFragment extends Fragment {
         btnPriorityMedium.setTextColor(getResources().getColor(android.R.color.black));
         btnPriorityHigh.setTextColor(getResources().getColor(android.R.color.black));
 
-        // Then set ACTIVE button
         activeButton.setBackgroundColor(getResources().getColor(R.color.purple_500));
         activeButton.setTextColor(getResources().getColor(android.R.color.white));
     }
 
     private void setupClickListeners() {
-        // Due Date Picker
         btnDueDate.setOnClickListener(v -> showDatePicker());
-
-        // Save Button
         btnSave.setOnClickListener(v -> saveTask());
-
-        // Cancel Button
         btnCancel.setOnClickListener(v -> {
             if (hasUnsavedChanges()) {
                 showDiscardDialog();
@@ -191,7 +175,6 @@ public class AddTaskFragment extends Fragment {
                 requireActivity().getSupportFragmentManager().popBackStack();
             }
         });
-
         btnBackIcon.setOnClickListener(v -> {
             if (hasUnsavedChanges()) {
                 showDiscardDialog();
@@ -206,7 +189,6 @@ public class AddTaskFragment extends Fragment {
         int year = calendar.get(Calendar.YEAR);
         int month = calendar.get(Calendar.MONTH);
         int day = calendar.get(Calendar.DAY_OF_MONTH);
-
         DatePickerDialog datePicker = new DatePickerDialog(
                 requireContext(),
                 (view, selectedYear, selectedMonth, selectedDay) -> {
@@ -216,50 +198,34 @@ public class AddTaskFragment extends Fragment {
                 },
                 year, month, day
         );
-
-        // IMPORTANT: This line prevents selecting past dates
         datePicker.getDatePicker().setMinDate(System.currentTimeMillis());
-
         datePicker.show();
     }
 
     private void saveTask() {
         String taskName = etTaskName.getText().toString().trim();
         String description = etTaskDescription.getText().toString().trim();
-
-        // Validate using your ValidationUtil
         String taskNameError = com.midtermproject.mytaskmanagementApp.util.ValidationUtil.validateTaskName(taskName);
         if (taskNameError != null) {
             etTaskName.setError(taskNameError);
             etTaskName.requestFocus();
             return;
         }
-
         if (selectedDueDate.isEmpty()) {
             Toast.makeText(requireContext(), "Please select a due date", Toast.LENGTH_SHORT).show();
             return;
         }
-
-        // Get selected category position
         int selectedPosition = spinnerCategory.getSelectedItemPosition();
-
-        // Validate category selection
-        if (selectedPosition <= 1) { // 0 = "Select Category", 1 = "+ Add New Category"
+        if (selectedPosition <= 1) {
             Toast.makeText(requireContext(), "Please select a category", Toast.LENGTH_SHORT).show();
             return;
         }
-
-        // Get actual category ID (adjust for first 2 non-category items)
-        int categoryIndex = selectedPosition - 2; // Subtract "Select Category" and "+ Add New Category"
-
+        int categoryIndex = selectedPosition - 2;
         if (categoryIndex < 0 || categoryIndex >= categoryList.size()) {
             Toast.makeText(requireContext(), "Invalid category selection", Toast.LENGTH_SHORT).show();
             return;
         }
-
         int categoryId = categoryList.get(categoryIndex).getCategoryId();
-
-        // Create and save task
         Task task = new Task(
                 categoryId,
                 taskName,
@@ -268,7 +234,6 @@ public class AddTaskFragment extends Fragment {
                 selectedPriority,
                 DateTimeUtil.getCurrentDate()
         );
-
         taskViewModel.insertTask(task);
         Toast.makeText(requireContext(), "Task saved!", Toast.LENGTH_SHORT).show();
         requireActivity().getSupportFragmentManager().popBackStack();

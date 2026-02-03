@@ -4,7 +4,6 @@ import android.view.Gravity;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
-import android.widget.Button;
 import android.widget.TextView;
 import androidx.annotation.NonNull;
 import androidx.appcompat.widget.PopupMenu;
@@ -102,7 +101,6 @@ public class CategoryAdapter extends RecyclerView.Adapter<CategoryAdapter.Catego
             cardForeground = itemView.findViewById(R.id.card_foreground);
             tvCreatedDate = itemView.findViewById(R.id.tv_created_date);
 
-            // Click to view tasks
             cardForeground.setOnClickListener(v -> {
                 int position = getAdapterPosition();
                 if (position != RecyclerView.NO_POSITION && listener != null) {
@@ -110,7 +108,6 @@ public class CategoryAdapter extends RecyclerView.Adapter<CategoryAdapter.Catego
                 }
             });
 
-            // Long press for edit/delete menu
             cardForeground.setOnLongClickListener(v -> {
                 int position = getAdapterPosition();
                 if (position != RecyclerView.NO_POSITION) {
