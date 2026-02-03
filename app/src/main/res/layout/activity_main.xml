@@ -44,7 +44,8 @@
             android:layout_marginTop="37dp"
             android:background="?attr/selectableItemBackgroundBorderless"
             android:contentDescription="More options"
-            android:src="@drawable/ic_menu_dots" />
+            android:src="@drawable/ic_menu_dots"
+            app:tint="#FFFFFF" />
 
         <ImageButton
             android:id="@+id/btn_search"
@@ -54,7 +55,8 @@
             android:layout_marginTop="37dp"
             android:background="?attr/selectableItemBackgroundBorderless"
             android:contentDescription="Search"
-            android:src="@android:drawable/ic_menu_search" />
+            android:src="@android:drawable/ic_menu_search"
+            app:tint="#FFFFFF"/>
 
     </androidx.appcompat.widget.Toolbar>
 
