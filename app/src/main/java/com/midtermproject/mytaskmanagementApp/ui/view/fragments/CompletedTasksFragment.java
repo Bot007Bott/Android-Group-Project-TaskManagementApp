@@ -16,10 +16,14 @@ import androidx.recyclerview.widget.RecyclerView;
 
 import com.google.android.material.bottomnavigation.BottomNavigationView;
 import com.midtermproject.mytaskmanagementApp.R;
+import com.midtermproject.mytaskmanagementApp.data.model.Task;
 import com.midtermproject.mytaskmanagementApp.ui.adapter.TaskAdapter;
 import com.midtermproject.mytaskmanagementApp.ui.viewmodel.TaskViewModel;
 import android.widget.PopupMenu;
 import com.midtermproject.mytaskmanagementApp.ui.view.activities.MainActivity;
+
+import java.util.ArrayList;
+import java.util.List;
 
 public class CompletedTasksFragment extends Fragment implements MainActivity.MenuCallback {
 
@@ -93,11 +97,22 @@ public class CompletedTasksFragment extends Fragment implements MainActivity.Men
     @Override
     public void showMenu(View anchorView) {
         PopupMenu popup = new PopupMenu(requireContext(), anchorView);
-        popup.getMenu().add("Clear All Completed Tasks");
+        popup.getMenu().add(0, R.id.menu_sort_date, 0, "Sort by Date");
+        popup.getMenu().add(0, R.id.menu_sort_priority, 0, "Sort by Priority");
+        popup.getMenu().add(0, 999, 0, "Clear All Completed Tasks");
 
         popup.setOnMenuItemClickListener(item -> {
-            showClearAllDialog();
-            return true;
+            int id = item.getItemId();
+            if (id == R.id.menu_sort_date) {
+                sortTasks("DATE");
+                return true;
+            } else if (id == R.id.menu_sort_priority) {
+                sortTasks("PRIORITY");
+                return true;
+            } else {
+                showClearAllDialog();
+                return true;
+            }
         });
         popup.show();
     }
@@ -112,6 +127,35 @@ public class CompletedTasksFragment extends Fragment implements MainActivity.Men
                 })
                 .setNegativeButton("Cancel", null)
                 .show();
+    }
+
+    private void sortTasks(String type) {
+        List<Task> sorted = new ArrayList<>(taskAdapter.getTasks());
+
+        if (sorted.isEmpty()) {
+            return;
+        }
+
+        if (type.equals("DATE")) {
+            sorted.sort((a, b) -> a.getDueDate().compareTo(b.getDueDate()));
+        } else if (type.equals("PRIORITY")) {
+            sorted.sort((a, b) -> {
+                int orderA = getPriorityOrder(a.getPriority());
+                int orderB = getPriorityOrder(b.getPriority());
+                return Integer.compare(orderA, orderB);
+            });
+        }
+        taskAdapter.setTasks(sorted);
+        showTaskList();
+    }
+
+    private int getPriorityOrder(String priority) {
+        switch (priority) {
+            case "HIGH": return 0;
+            case "MEDIUM": return 1;
+            case "LOW": return 2;
+            default: return 3;
+        }
     }
 
 }
