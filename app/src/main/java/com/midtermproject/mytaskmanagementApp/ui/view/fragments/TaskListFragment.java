@@ -1,0 +1,593 @@
+package com.midtermproject.mytaskmanagementApp.ui.view.fragments;
+
+import android.os.Bundle;
+import android.text.Editable;
+import android.text.TextWatcher;
+import android.util.Log;
+import android.view.LayoutInflater;
+import android.view.View;
+import android.view.ViewGroup;
+import android.widget.Button;
+import android.widget.EditText;
+import android.widget.LinearLayout;
+import android.widget.PopupMenu;
+import androidx.appcompat.app.AlertDialog;
+import android.widget.TextView;
+import android.widget.Toast;
+import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
+import androidx.fragment.app.Fragment;
+import androidx.lifecycle.ViewModelProvider;
+import androidx.recyclerview.widget.LinearLayoutManager;
+import androidx.recyclerview.widget.RecyclerView;
+import android.content.Context;
+import android.view.inputmethod.InputMethodManager;
+
+import com.google.android.material.bottomnavigation.BottomNavigationView;
+import com.google.android.material.floatingactionbutton.FloatingActionButton;
+import com.midtermproject.mytaskmanagementApp.R;
+import com.midtermproject.mytaskmanagementApp.data.model.Task;
+import com.midtermproject.mytaskmanagementApp.ui.adapter.TaskAdapter;
+import com.midtermproject.mytaskmanagementApp.ui.view.activities.MainActivity;
+import com.midtermproject.mytaskmanagementApp.ui.viewmodel.TaskViewModel;
+import com.midtermproject.mytaskmanagementApp.util.Constants;
+import com.midtermproject.mytaskmanagementApp.util.DateTimeUtil;
+import com.midtermproject.mytaskmanagementApp.util.NotificationHelper;
+
+import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
+
+public class TaskListFragment extends Fragment implements MainActivity.MenuCallback {
+
+    private TaskViewModel taskViewModel;
+    private TaskAdapter taskAdapter;
+    private TextView tvTotalTasks, tvDoneTasks, tvTodayTasks;
+    private RecyclerView recyclerView;
+    private TextView tvEmptyState;
+    private Button btnAll, btnToday, btnWeek, btnOverdue;
+    private FloatingActionButton fabAddTask;
+    private EditText etSearch;
+    private Button btnClearSearch;
+    private LinearLayout searchContainer;
+
+    private String currentFilter = "ALL";
+    private List<com.midtermproject.mytaskmanagementApp.data.model.Task> allTasks = new ArrayList<>();
+
+    private static Set<Integer> notifiedTaskIds = new HashSet<>();
+
+    private static boolean dialogShownThisSession = false;
+
+    private int filterCategoryId = -1;
+    private String filterCategoryName = null;
+
+    private TextView tvCategoryEmpty;
+
+    @Nullable
+    @Override
+    public View onCreateView(@NonNull LayoutInflater inflater,
+                             @Nullable ViewGroup container,
+                             @Nullable Bundle savedInstanceState) {
+        return inflater.inflate(R.layout.fragment_task_list, container, false);
+    }
+
+    @Override
+    public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
+        super.onViewCreated(view, savedInstanceState);
+        if (getArguments() != null) {
+            filterCategoryId = getArguments().getInt("CATEGORY_ID", -1);
+            filterCategoryName = getArguments().getString("CATEGORY_NAME");
+
+            if (filterCategoryId != -1 && filterCategoryName != null) {
+                TextView tvHeader = view.findViewById(R.id.tv_header);
+                tvHeader.setText("Category : "+filterCategoryName);
+                tvHeader.setVisibility(View.VISIBLE);
+            }
+        }
+
+        initViews(view);
+        setupRecyclerView();
+        taskViewModel = new ViewModelProvider(this).get(TaskViewModel.class);
+        observeTasks();
+        searchContainer.setVisibility(View.GONE);
+    }
+
+    private void initViews(View view) {
+        tvTotalTasks = view.findViewById(R.id.tv_total_tasks);
+        tvDoneTasks = view.findViewById(R.id.tv_done_tasks);
+        tvTodayTasks = view.findViewById(R.id.tv_today_tasks);
+
+        btnAll = view.findViewById(R.id.btn_filter_all);
+        btnToday = view.findViewById(R.id.btn_filter_today);
+        btnWeek = view.findViewById(R.id.btn_filter_week);
+        btnOverdue = view.findViewById(R.id.btn_filter_more);
+
+        recyclerView = view.findViewById(R.id.recycler_view_tasks);
+        tvEmptyState = view.findViewById(R.id.tv_empty_state);
+        fabAddTask = view.findViewById(R.id.fab_add_task);
+
+        searchContainer = view.findViewById(R.id.search_container);
+        etSearch = view.findViewById(R.id.et_search);
+        btnClearSearch = view.findViewById(R.id.btn_clear_search);
+        tvCategoryEmpty = view.findViewById(R.id.tv_category_empty);
+
+        setupButtonListeners();
+        setupSearch();
+    }
+
+    private void setupSearch() {
+        etSearch.addTextChangedListener(new TextWatcher() {
+            @Override
+            public void beforeTextChanged(CharSequence s, int start, int count, int after) {}
+
+            @Override
+            public void onTextChanged(CharSequence s, int start, int before, int count) {
+                String query = s.toString().trim();
+                filterTasks(query);
+            }
+
+            @Override
+            public void afterTextChanged(Editable s) {}
+        });
+
+        btnClearSearch.setOnClickListener(v -> {
+            hideSearchBar();
+        });
+    }
+
+    private void filterTasks(String query) {
+        if (query.isEmpty()) {
+            applyFilter(currentFilter);
+        } else {
+            List<Task> filtered = new ArrayList<>();
+            for (Task task : allTasks) {
+                if (task.getTaskName().toLowerCase().contains(query.toLowerCase()) ||
+                        (task.getTaskDescription() != null &&
+                                task.getTaskDescription().toLowerCase().contains(query.toLowerCase()))) {
+                    filtered.add(task);
+                }
+            }
+
+            taskAdapter.setTasks(filtered);
+
+            if (filtered.isEmpty()) {
+                tvEmptyState.setText("No tasks found for: " + query);
+                showEmptyState();
+            } else {
+                showTaskList();
+            }
+        }
+    }
+
+    private void hideSearchBar() {
+        etSearch.setText("");
+        searchContainer.setVisibility(View.GONE);
+        hideKeyboard();
+        etSearch.clearFocus();
+        applyFilter(currentFilter);
+    }
+
+    public void toggleSearchBar() {
+        if (searchContainer.getVisibility() == View.VISIBLE) {
+            hideSearchBar();
+        } else {
+            searchContainer.setVisibility(View.VISIBLE);
+            etSearch.setText("");
+            etSearch.requestFocus();
+            showKeyboard();
+        }
+    }
+
+    private void showKeyboard() {
+        InputMethodManager imm = (InputMethodManager) requireContext()
+                .getSystemService(Context.INPUT_METHOD_SERVICE);
+        if (imm != null) {
+            imm.showSoftInput(etSearch, InputMethodManager.SHOW_IMPLICIT);
+        }
+    }
+
+    private void hideKeyboard() {
+        InputMethodManager imm = (InputMethodManager) requireContext()
+                .getSystemService(Context.INPUT_METHOD_SERVICE);
+        if (imm != null && etSearch != null) {
+            imm.hideSoftInputFromWindow(etSearch.getWindowToken(), 0);
+        }
+    }
+
+    private void setupRecyclerView() {
+        taskAdapter = new TaskAdapter();
+        recyclerView.setLayoutManager(new LinearLayoutManager(getContext()));
+        recyclerView.setAdapter(taskAdapter);
+
+        taskAdapter.setOnItemClickListener(task -> {
+            View btnSearch = requireActivity().findViewById(R.id.btn_search);
+            View btnMenu = requireActivity().findViewById(R.id.btn_menu);
+            if (btnSearch != null) btnSearch.setVisibility(View.GONE);
+            if (btnMenu != null) btnMenu.setVisibility(View.GONE);
+
+            Bundle args = new Bundle();
+            args.putInt(Constants.EXTRA_TASK_ID, task.getTaskId());
+
+            TaskDetailFragment fragment = new TaskDetailFragment();
+            fragment.setArguments(args);
+
+            requireActivity().getSupportFragmentManager().beginTransaction()
+                    .replace(R.id.fragment_container, fragment)
+                    .addToBackStack(null)
+                    .commit();
+        });
+
+        taskAdapter.setOnTaskCompletionListener((task, isCompleted) -> {
+            taskViewModel.updateTaskCompletion(task.getTaskId(), isCompleted);
+        });
+    }
+
+    private void setupButtonListeners() {
+        fabAddTask.setOnClickListener(v -> {
+            requireActivity().getSupportFragmentManager().beginTransaction()
+                    .replace(R.id.fragment_container, new AddTaskFragment())
+                    .addToBackStack(null)
+                    .commit();
+        });
+
+        btnAll.setOnClickListener(v -> {
+            hideFilterHeader();
+            applyFilter("ALL");
+        });
+
+        btnToday.setOnClickListener(v -> {
+            hideFilterHeader();
+            applyFilter("TODAY");
+        });
+
+        btnWeek.setOnClickListener(v -> {
+            hideFilterHeader();
+            applyFilter("WEEK");
+        });
+
+        btnOverdue.setOnClickListener(v -> {
+            hideFilterHeader();
+            applyFilter("OVERDUE");
+        });
+    }
+
+    private void hideFilterHeader() {
+        filterCategoryId = -1;
+        filterCategoryName = null;
+        TextView tvHeader = requireView().findViewById(R.id.tv_header);
+        if (tvHeader != null) {
+            tvHeader.setVisibility(View.GONE);
+        }
+    }
+
+    private void observeTasks() {
+        taskViewModel.getAllTasks().observe(getViewLifecycleOwner(), tasks -> {
+            if (tasks != null) {
+                allTasks = tasks;
+                applyFilter(currentFilter);
+                updateStats(tasks);
+                checkAndShowDueTaskNotifications(tasks);
+                if (tasks.isEmpty()) {
+                    tvEmptyState.setText("No tasks yet\n\nCreate your first task");
+                    showEmptyState();
+                } else {
+                    showTaskList();
+                }
+
+            }
+        });
+    }
+
+    private void clearAllFilterButtons() {
+        Button[] buttons = {btnAll, btnToday, btnWeek, btnOverdue};
+        for (Button btn : buttons) {
+            btn.setActivated(false);
+            btn.setTextColor(getResources().getColor(R.color.purple_500));
+        }
+    }
+    private void applyFilter(String filter) {
+        currentFilter = filter;
+        updateFilterButtons(filter);
+
+        if (allTasks == null || allTasks.isEmpty()) {
+            taskAdapter.setTasks(new ArrayList<>());
+            showEmptyState();
+            return;
+        }
+
+        List<Task> filteredTasks = new ArrayList<>();
+        List<Task> tasksToFilter = allTasks;
+        if (filterCategoryId != -1) {
+            tasksToFilter = new ArrayList<>();
+            for (Task task : allTasks) {
+                if (task.getCategoryId() == filterCategoryId) {
+                    tasksToFilter.add(task);
+                }
+            }
+        }
+
+        String today = DateTimeUtil.getCurrentDate();
+
+        switch (filter) {
+            case "ALL":
+                filteredTasks.addAll(tasksToFilter);
+                break;
+
+            case "TODAY":
+                for (Task task : tasksToFilter) {
+                    if (DateTimeUtil.isToday(task.getDueDate()) && !task.isTaskCompleted()) {
+                        filteredTasks.add(task);
+                    }
+                }
+                break;
+
+            case "WEEK":
+                for (Task task : tasksToFilter) {
+                    if (isDueThisWeek(task.getDueDate()) && !task.isTaskCompleted()) {
+                        filteredTasks.add(task);
+                    }
+                }
+                break;
+
+            case "OVERDUE":
+                for (Task task : tasksToFilter) {
+                    if ((DateTimeUtil.isOverdue(task.getDueDate()) && !task.isTaskCompleted())) {
+                        filteredTasks.add(task);
+                    }
+                }
+                break;
+        }
+        taskAdapter.setTasks(filteredTasks);
+        if (filteredTasks.isEmpty()) {
+            if (filterCategoryId != -1) {
+                int totalInCategory = 0;
+                int completedInCategory = 0;
+
+                for (Task task : allTasks) {
+                    if (task.getCategoryId() == filterCategoryId) {
+                        totalInCategory++;
+                        if (task.isTaskCompleted()) {
+                            completedInCategory++;
+                        }
+                    }
+                }
+
+                if (totalInCategory == 0) {
+                    tvCategoryEmpty.setText("No tasks in this category\n\nCreate your first task");
+                } else if (completedInCategory == totalInCategory) {
+                    tvCategoryEmpty.setText("All tasks completed!\n\nGreat job!");
+                } else {
+                    tvCategoryEmpty.setText("No tasks match this filter");
+                }
+                tvCategoryEmpty.setVisibility(View.VISIBLE);
+                tvEmptyState.setVisibility(View.GONE);
+            } else {
+                tvEmptyState.setText(getEmptyStateText(filter));
+                tvEmptyState.setVisibility(View.VISIBLE);
+                tvCategoryEmpty.setVisibility(View.GONE);
+            }
+            recyclerView.setVisibility(View.GONE);
+        } else {
+            recyclerView.setVisibility(View.VISIBLE);
+            tvEmptyState.setVisibility(View.GONE);
+            tvCategoryEmpty.setVisibility(View.GONE);
+        }
+    }
+
+    private boolean isDueThisWeek(String dueDate) {
+        try {
+            String today = DateTimeUtil.getCurrentDate();
+            String weekLater = DateTimeUtil.getDateDaysFromNow(7);
+            java.text.SimpleDateFormat sdf = new java.text.SimpleDateFormat("yyyy-MM-dd", java.util.Locale.getDefault());
+            java.util.Date taskDate = sdf.parse(dueDate);
+            java.util.Date todayDate = sdf.parse(today);
+            java.util.Date weekLaterDate = sdf.parse(weekLater);
+            return (taskDate.equals(todayDate) || taskDate.after(todayDate)) &&
+                    (taskDate.before(weekLaterDate) || taskDate.equals(weekLaterDate));
+        } catch (Exception e) {
+            return false;
+        }
+    }
+
+    private String getEmptyStateText(String filter) {
+        switch (filter) {
+            case "TODAY":
+                return "No tasks due today\n\nGreat job!";
+            case "WEEK":
+                return "No tasks due this week\n\nYou're on top of things!";
+            case "OVERDUE":
+                return "No overdue tasks\n\nEverything is under control!";
+            default:
+                return "No tasks yet\n\nCreate your first task";
+        }
+    }
+
+    private void updateFilterButtons(String activeFilter) {
+        if (filterCategoryId != -1) {
+            clearAllFilterButtons();
+            return;
+        }
+        Button[] buttons = {btnAll, btnToday, btnWeek, btnOverdue};
+        for (Button btn : buttons) {
+            btn.setActivated(false);
+            btn.setTextColor(getResources().getColor(R.color.purple_500));
+        }
+        Button activeButton;
+        switch (activeFilter) {
+            case "TODAY":
+                activeButton = btnToday;
+                break;
+            case "WEEK":
+                activeButton = btnWeek;
+                break;
+            case "OVERDUE":
+                activeButton = btnOverdue;
+                break;
+            default:
+                activeButton = btnAll;
+                break;
+        }
+        activeButton.setActivated(true);
+        activeButton.setTextColor(getResources().getColor(android.R.color.white));
+    }
+
+    private void updateStats(List<com.midtermproject.mytaskmanagementApp.data.model.Task> tasks) {
+        int total = tasks.size();
+        int done = 0;
+        int today = 0;
+        String currentDate = DateTimeUtil.getCurrentDate();
+
+        for (com.midtermproject.mytaskmanagementApp.data.model.Task task : tasks) {
+            if (task.isTaskCompleted()) {
+                done++;
+            }
+            if (DateTimeUtil.isToday(task.getDueDate()) && !task.isTaskCompleted()) {
+                today++;
+            }
+        }
+
+        tvTotalTasks.setText(String.valueOf(total));
+        tvDoneTasks.setText(String.valueOf(done));
+        tvTodayTasks.setText(String.valueOf(today));
+    }
+
+    private void showTaskList() {
+        recyclerView.setVisibility(View.VISIBLE);
+        tvEmptyState.setVisibility(View.GONE);
+    }
+
+    private void showEmptyState() {
+        recyclerView.setVisibility(View.GONE);
+        tvEmptyState.setVisibility(View.VISIBLE);
+    }
+
+    private void checkAndShowDueTaskNotifications(List<Task> tasks) {
+
+        if (tasks == null || getContext() == null) {
+            return;
+        }
+
+        List<Task> dueTodayTasks = new ArrayList<>();
+        for (Task task : tasks) {
+            if (task.isTaskCompleted()) {
+                continue;
+            }
+
+            if (DateTimeUtil.isToday(task.getDueDate())) {
+                dueTodayTasks.add(task);
+                if (!notifiedTaskIds.contains(task.getTaskId())) {
+                    NotificationHelper.showDueTodayNotification(
+                            requireContext(),
+                            task.getTaskName(),
+                            task.getTaskId()
+                    );
+                    notifiedTaskIds.add(task.getTaskId());
+                }
+            }
+            if (DateTimeUtil.isOverdue(task.getDueDate())) {
+                if (!notifiedTaskIds.contains(task.getTaskId())) {
+                    NotificationHelper.showOverdueNotification(
+                            requireContext(),
+                            task.getTaskName(),
+                            task.getTaskId()
+                    );
+                    notifiedTaskIds.add(task.getTaskId());
+                }
+            }
+            if (DateTimeUtil.isTomorrow(task.getDueDate())) {
+                if (!notifiedTaskIds.contains(task.getTaskId())) {
+                    NotificationHelper.showTomorrowNotification(
+                            requireContext(),
+                            task.getTaskName(),
+                            task.getTaskId()
+                    );
+                    notifiedTaskIds.add(task.getTaskId());
+                }
+            }
+        }
+
+        if (!dueTodayTasks.isEmpty() && isAdded() && !dialogShownThisSession) {
+            showDueTasksDialog(dueTodayTasks);
+            dialogShownThisSession = true;
+        }
+    }
+
+    private void showDueTasksDialog(List<Task> dueTasks) {
+        StringBuilder message = new StringBuilder("Tasks due today:\n\n");
+        for (Task task : dueTasks) {
+            message.append("• ").append(task.getTaskName()).append("\n");
+        }
+
+        new androidx.appcompat.app.AlertDialog.Builder(requireContext())
+                .setTitle("📅 Tasks Due Today")
+                .setMessage(message.toString())
+                .setPositiveButton("OK", null)
+                .setNegativeButton("View Tasks", (dialog, which) -> {
+                    applyFilter("TODAY");
+                })
+                .show();
+    }
+
+    @Override
+    public void showMenu(View anchorView) {
+        PopupMenu popup = new PopupMenu(requireContext(), anchorView);
+        popup.inflate(R.menu.menu_task_options);
+        popup.setOnMenuItemClickListener(item -> {
+            int id = item.getItemId();
+            if (id == R.id.menu_sort_date) {
+                sortTasks("DATE");
+            } else if (id == R.id.menu_sort_priority) {
+                sortTasks("PRIORITY");
+            } else if (id == R.id.menu_show_pending) {
+                showPendingOnly();
+                return true;
+            }
+            return true;
+        });
+        popup.show();
+    }
+
+    private void sortTasks(String type) {
+        List<Task> sorted = new ArrayList<>(taskAdapter.getTasks());
+        if (sorted.isEmpty()) {
+            return;
+        }
+        if (type.equals("DATE")) {
+            sorted.sort((a, b) -> a.getDueDate().compareTo(b.getDueDate()));
+        } else if (type.equals("PRIORITY")) {
+            sorted.sort((a, b) -> {
+                int orderA = getPriorityOrder(a.getPriority());
+                int orderB = getPriorityOrder(b.getPriority());
+                return Integer.compare(orderA, orderB);
+            });
+        }
+        taskAdapter.setTasks(sorted);
+        showTaskList();
+    }
+
+    private int getPriorityOrder(String priority) {
+        switch (priority) {
+            case "HIGH": return 0;
+            case "MEDIUM": return 1;
+            case "LOW": return 2;
+            default: return 3;
+        }
+    }
+
+    private void showPendingOnly() {
+        List<Task> pendingTasks = new ArrayList<>();
+        for (Task task : allTasks) {
+            if (!task.isTaskCompleted()) {
+                pendingTasks.add(task);
+            }
+        }
+        taskAdapter.setTasks(pendingTasks);
+        if (pendingTasks.isEmpty()) {
+            tvEmptyState.setText("No pending tasks\n\nAll tasks completed!");
+            showEmptyState();
+        } else {
+            showTaskList();
+        }
+    }
+}
