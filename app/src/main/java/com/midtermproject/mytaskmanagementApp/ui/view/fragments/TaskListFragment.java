@@ -539,6 +539,9 @@ public class TaskListFragment extends Fragment implements MainActivity.MenuCallb
                 sortTasks("DATE");
             } else if (id == R.id.menu_sort_priority) {
                 sortTasks("PRIORITY");
+            } else if (id == R.id.menu_show_pending) {
+                showPendingOnly();
+                return true;
             }
             return true;
         });
@@ -569,6 +572,22 @@ public class TaskListFragment extends Fragment implements MainActivity.MenuCallb
             case "MEDIUM": return 1;
             case "LOW": return 2;
             default: return 3;
+        }
+    }
+
+    private void showPendingOnly() {
+        List<Task> pendingTasks = new ArrayList<>();
+        for (Task task : allTasks) {
+            if (!task.isTaskCompleted()) {
+                pendingTasks.add(task);
+            }
+        }
+        taskAdapter.setTasks(pendingTasks);
+        if (pendingTasks.isEmpty()) {
+            tvEmptyState.setText("No pending tasks\n\nAll tasks completed!");
+            showEmptyState();
+        } else {
+            showTaskList();
         }
     }
 }

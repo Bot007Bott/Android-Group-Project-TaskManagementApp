@@ -6,4 +6,7 @@
     <item
         android:id="@+id/menu_sort_priority"
         android:title="Sort by Priority" />
+    <item
+        android:id="@+id/menu_show_pending"
+        android:title="Show Pending Only" />
 </menu>
