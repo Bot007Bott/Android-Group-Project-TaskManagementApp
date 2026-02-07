@@ -141,18 +141,20 @@ public class TaskAdapter extends RecyclerView.Adapter<TaskAdapter.TaskViewHolder
                 tvTaskName.setPaintFlags(tvTaskName.getPaintFlags() & ~android.graphics.Paint.STRIKE_THRU_TEXT_FLAG);
                 tvDueDate.setPaintFlags(tvDueDate.getPaintFlags() & ~android.graphics.Paint.STRIKE_THRU_TEXT_FLAG);
             }
-
-            String daysLeftText = DateTimeUtil.getTimeUntilDueText(task.getDueDate());
-            tvDaysLeft.setText(daysLeftText);
-
-            if (DateTimeUtil.isOverdue(task.getDueDate())) {
-                tvDaysLeft.setTextColor(Color.RED);
-            } else if (DateTimeUtil.isToday(task.getDueDate())) {
-                tvDaysLeft.setTextColor(Color.parseColor("#FF9800"));
-            } else {
+            if (task.isTaskCompleted()) {
+                tvDaysLeft.setText("Completed");
                 tvDaysLeft.setTextColor(Color.parseColor("#4CAF50"));
+            } else {
+                String daysLeftText = DateTimeUtil.getTimeUntilDueText(task.getDueDate());
+                tvDaysLeft.setText(daysLeftText);
+                if (DateTimeUtil.isOverdue(task.getDueDate())) {
+                    tvDaysLeft.setTextColor(Color.RED);
+                } else if (DateTimeUtil.isToday(task.getDueDate())) {
+                    tvDaysLeft.setTextColor(Color.parseColor("#FF9800"));
+                } else {
+                    tvDaysLeft.setTextColor(Color.parseColor("#4CAF50"));
+                }
             }
-
             tvPriority.setText(task.getPriority());
         }
     }
