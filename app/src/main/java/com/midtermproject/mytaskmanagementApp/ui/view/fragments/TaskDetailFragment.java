@@ -23,7 +23,7 @@ import com.midtermproject.mytaskmanagementApp.ui.viewmodel.CategoryViewModel;
 
 public class TaskDetailFragment extends Fragment {
 
-    private TextView tvTaskName, tvDescription, tvCategory, tvDueDate, tvPriority, tvCreatedDate;
+    private TextView tvTaskName, tvDescription, tvCategory, tvDueDate, tvPriority, tvCreatedDate, tvDaysLeft;
     private CheckBox cbCompleted;
     private Button btnEdit, btnDelete, btnBack;
 
@@ -66,7 +66,7 @@ public class TaskDetailFragment extends Fragment {
         btnDelete = view.findViewById(R.id.btn_delete);
         btnBack = view.findViewById(R.id.btn_back);
         btn_arrow_back = view.findViewById(R.id.btn_back_detail_task);
-
+        tvDaysLeft = view.findViewById(R.id.tv_days_left);
     }
 
     private void setupViewModels() {
@@ -129,6 +129,15 @@ public class TaskDetailFragment extends Fragment {
             tvPriority.setBackgroundColor(getResources().getColor(android.R.color.holo_orange_light));
         } else {
             tvPriority.setBackgroundColor(getResources().getColor(android.R.color.holo_green_light));
+        }
+        String daysLeftText = DateTimeUtil.getTimeUntilDueText(task.getDueDate());
+        tvDaysLeft.setText("Status: "+daysLeftText);
+        if (DateTimeUtil.isOverdue(task.getDueDate())) {
+            tvDaysLeft.setTextColor(getResources().getColor(android.R.color.holo_red_dark));
+        } else if (DateTimeUtil.isToday(task.getDueDate())) {
+            tvDaysLeft.setTextColor(getResources().getColor(android.R.color.holo_orange_dark));
+        } else {
+            tvDaysLeft.setTextColor(getResources().getColor(android.R.color.holo_green_dark));
         }
     }
 

@@ -80,6 +80,15 @@
             android:text="Jan 30, 2024"
             android:layout_marginBottom="16dp" />
 
+        <TextView
+            android:id="@+id/tv_days_left"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Due in 3 days"
+            android:textSize="14sp"
+            android:textStyle="bold"
+            android:layout_marginBottom="16dp" />
+
         <!-- Priority -->
         <TextView
             android:layout_width="wrap_content"

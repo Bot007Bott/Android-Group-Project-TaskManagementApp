@@ -70,7 +70,7 @@ public class TaskAdapter extends RecyclerView.Adapter<TaskAdapter.TaskViewHolder
     }
 
     class TaskViewHolder extends RecyclerView.ViewHolder {
-        private TextView tvTaskName, tvDueDate, tvPriority;
+        private TextView tvTaskName, tvDueDate, tvPriority, tvDaysLeft;
         private CheckBox cbCompleted;
 
         TaskViewHolder(@NonNull View itemView) {
@@ -79,6 +79,7 @@ public class TaskAdapter extends RecyclerView.Adapter<TaskAdapter.TaskViewHolder
             tvDueDate = itemView.findViewById(R.id.tv_due_date);
             tvPriority = itemView.findViewById(R.id.tv_priority);
             cbCompleted = itemView.findViewById(R.id.cb_completed);
+            tvDaysLeft = itemView.findViewById(R.id.tv_days_left);
 
             itemView.setOnClickListener(v -> {
                 int position = getAdapterPosition();
@@ -108,6 +109,7 @@ public class TaskAdapter extends RecyclerView.Adapter<TaskAdapter.TaskViewHolder
             tvDueDate.setText(DateTimeUtil.formatDateForDisplay(task.getDueDate()));
             tvPriority.setText(task.getPriority());
             cbCompleted.setChecked(task.isTaskCompleted());
+            tvDueDate.setText(DateTimeUtil.formatDateForDisplay(task.getDueDate()));
 
             cbCompleted.setOnCheckedChangeListener((buttonView, isChecked) -> {
                 int position = getAdapterPosition();
@@ -139,6 +141,19 @@ public class TaskAdapter extends RecyclerView.Adapter<TaskAdapter.TaskViewHolder
                 tvTaskName.setPaintFlags(tvTaskName.getPaintFlags() & ~android.graphics.Paint.STRIKE_THRU_TEXT_FLAG);
                 tvDueDate.setPaintFlags(tvDueDate.getPaintFlags() & ~android.graphics.Paint.STRIKE_THRU_TEXT_FLAG);
             }
+
+            String daysLeftText = DateTimeUtil.getTimeUntilDueText(task.getDueDate());
+            tvDaysLeft.setText(daysLeftText);
+
+            if (DateTimeUtil.isOverdue(task.getDueDate())) {
+                tvDaysLeft.setTextColor(Color.RED);
+            } else if (DateTimeUtil.isToday(task.getDueDate())) {
+                tvDaysLeft.setTextColor(Color.parseColor("#FF9800"));
+            } else {
+                tvDaysLeft.setTextColor(Color.parseColor("#4CAF50"));
+            }
+
+            tvPriority.setText(task.getPriority());
         }
     }
 }

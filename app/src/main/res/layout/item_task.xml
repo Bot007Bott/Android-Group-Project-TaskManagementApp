@@ -44,6 +44,15 @@
                 android:textColor="@android:color/darker_gray"
                 android:layout_marginTop="4dp" />
 
+            <TextView
+                android:id="@+id/tv_days_left"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Due in 3 days"
+                android:textSize="11sp"
+                android:textColor="@android:color/holo_orange_dark"
+                android:layout_marginTop="2dp" />
+
         </LinearLayout>
 
         <TextView
