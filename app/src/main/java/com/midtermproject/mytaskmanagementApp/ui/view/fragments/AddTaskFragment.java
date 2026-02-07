@@ -10,6 +10,7 @@ import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
 import android.widget.Button;
 import android.widget.EditText;
+import android.widget.ImageButton;
 import android.widget.ImageView;
 import android.widget.Spinner;
 import android.widget.Toast;
@@ -47,6 +48,8 @@ public class AddTaskFragment extends Fragment {
 
     private ImageView btnBackIcon;
 
+    private ImageButton btnSearch, btnMenu;
+
 
     @Nullable
     @Override
@@ -61,6 +64,8 @@ public class AddTaskFragment extends Fragment {
         super.onViewCreated(view, savedInstanceState);
 
         initViews(view);
+        if (btnSearch != null) btnSearch.setVisibility(View.GONE);
+        if (btnMenu != null) btnMenu.setVisibility(View.GONE);
         setupViewModels();
         setupCategorySpinner();
         setupClickListeners();
@@ -83,6 +88,8 @@ public class AddTaskFragment extends Fragment {
         btnCancel = view.findViewById(R.id.btn_cancel);
 
         btnBackIcon = view.findViewById(R.id.ic_back);
+        btnSearch = requireActivity().findViewById(R.id.btn_search);
+        btnMenu = requireActivity().findViewById(R.id.btn_menu);
     }
 
     private void setupViewModels() {
@@ -172,6 +179,7 @@ public class AddTaskFragment extends Fragment {
             if (hasUnsavedChanges()) {
                 showDiscardDialog();
             } else {
+                showToolbarButtons();
                 requireActivity().getSupportFragmentManager().popBackStack();
             }
         });
@@ -179,6 +187,7 @@ public class AddTaskFragment extends Fragment {
             if (hasUnsavedChanges()) {
                 showDiscardDialog();
             } else {
+                showToolbarButtons();
                 requireActivity().getSupportFragmentManager().popBackStack();
             }
         });
@@ -236,6 +245,7 @@ public class AddTaskFragment extends Fragment {
         );
         taskViewModel.insertTask(task);
         Toast.makeText(requireContext(), "Task saved!", Toast.LENGTH_SHORT).show();
+        showToolbarButtons();
         requireActivity().getSupportFragmentManager().popBackStack();
     }
 
@@ -251,9 +261,15 @@ public class AddTaskFragment extends Fragment {
                 .setTitle("Discard Changes?")
                 .setMessage("You have unsaved changes. Are you sure you want to leave?")
                 .setPositiveButton("Discard", (dialog, which) -> {
+                    showToolbarButtons();
                     requireActivity().getSupportFragmentManager().popBackStack();
                 })
                 .setNegativeButton("Cancel", null)
                 .show();
+    }
+
+    private void showToolbarButtons() {
+        if (btnSearch != null) btnSearch.setVisibility(View.VISIBLE);
+        if (btnMenu != null) btnMenu.setVisibility(View.VISIBLE);
     }
 }
